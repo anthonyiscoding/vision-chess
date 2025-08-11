@@ -1,0 +1,17 @@
+[project]
+name = "chessgpt"
+version = "0.1.0"
+description = "Train transformers to play chess"
+authors = [
+    {name = "anthonyiscoding",email = "142696453+anthonyiscoding@users.noreply.github.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "python-chess (>=1.999,<2.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
