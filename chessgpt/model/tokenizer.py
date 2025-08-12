@@ -1,5 +1,6 @@
 from chess.pgn import Game
 
+# Naive implementation, encodes strings like "a1a1" which aren't valid moves.
 def to_embedding(move: str):
     if move == '<|startofgame|>':
         return 4096

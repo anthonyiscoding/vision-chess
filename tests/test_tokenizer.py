@@ -22,5 +22,3 @@ def test_to_from():
         encoded = to_embedding(m)
         decoded = from_embedding(encoded)
         assert m == decoded
-
-        print(m, encoded, decoded)
