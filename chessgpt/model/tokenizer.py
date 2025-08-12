@@ -13,7 +13,9 @@ def to_embedding(move: str):
 
     return file_start * rank_start * file_end * rank_end
 
-def tokenizer(game: Game):
-    moves = [m.uci() for m in game.mainline_moves()]
+def encode(game: Game):
+    token_ids = []
+    for m in game.mainline_moves():
+        token_ids.append(to_embedding(m.uci()))
 
-    return moves
+    return token_ids
