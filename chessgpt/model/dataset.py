@@ -12,4 +12,4 @@ class PGNDataset(Dataset):
 
         with open(path, mode="r", encoding="utf8") as f:
             game = pgn.read_game(f)
-            token_ids = tokenizer.encode(game)
+            token_ids = tokenizer(game)
