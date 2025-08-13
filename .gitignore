@@ -208,5 +208,8 @@ __marimo__/
 # Data
 data/
 
-#VSCode
+# VSCode
 .vscode
+
+# Mac
+.DS_Store
