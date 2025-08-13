@@ -14,4 +14,4 @@ max_seq_len = 4096
 attn_dropout = 0.0
 transformer_layers = 6
 vocabulary_size = len(generate_all_possible_moves())
-num_epochs = 3
+num_epochs = 64

@@ -3,7 +3,7 @@ import torch
 import chessgpt.model.config as config
 from chessgpt.model import tokenizer, transformer as t
 
-path = "data/carlsen_randjelovic_1999.pgn"
+path = "data/Carlsen.pgn"
     
 with open(path, "r", encoding="utf8") as f:
     game = pgn.read_game(f)
@@ -29,4 +29,13 @@ for epoch in range(config.num_epochs):
     loss = loss_fn(output, target)
     loss.backward()
     optimizer.step()
-    print(f"Epoch {epoch}: Loss = {loss.item()}")
+    # print(f"Epoch {epoch}: Loss = {loss.item()}")
+
+    # TODO: Validate against other data than input
+    model.eval()
+    with torch.no_grad():
+        val_output = model(input)
+        val_output = val_output.view(-1, val_output.size(-1))
+        val_target = input.view(-1)
+        val_loss = loss_fn(val_output, val_target)
+        print(f"Epoch {epoch}: Loss = {loss.item()} Validation Loss = {val_loss.item()}")
