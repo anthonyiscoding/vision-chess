@@ -1,12 +1,32 @@
-import chess.pgn
-from chessgpt.model import tokenizer
+from chess import pgn
+import torch
+import chessgpt.model.config as config
+from chessgpt.model import tokenizer, transformer as t
 
-f = open("data/carlsen_randjelovic_1999.pgn", encoding="utf8")
-game_pgn = chess.pgn.read_game(f)
-board = game_pgn.board()
-moves = [m.uci() for m in game_pgn.mainline_moves()]
-token_ids = tokenizer.encode(game_pgn)
-assert len(moves) == len(token_ids)
+path = "data/carlsen_randjelovic_1999.pgn"
+    
+with open(path, "r", encoding="utf8") as f:
+    game = pgn.read_game(f)
 
-for index, m in enumerate(moves):
-    print(m, token_ids[index])
+# Seperate array entry for each game/move set
+device = torch.device("cpu")
+model = t.ChessModel()
+input = torch.tensor([tokenizer.encode(game)])
+
+model.to(device)
+input.to(device)
+
+loss_fn = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+
+for epoch in range(config.num_epochs):
+    model.train()
+    optimizer.zero_grad()
+    output = model(input)
+    # Reshape output and target for CrossEntropyLoss
+    output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
+    target = input.view(-1)  # (batch*seq_len,)
+    loss = loss_fn(output, target)
+    loss.backward()
+    optimizer.step()
+    print(f"Epoch {epoch}: Loss = {loss.item()}")
