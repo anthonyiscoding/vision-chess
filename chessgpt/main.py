@@ -7,27 +7,27 @@ from chessgpt.model.data import PGNDataset
 
 path = "data/Carlsen.pgn"
 
-dataset = PGNDataset(path)
+device = torch.device("mps")
+dataset = PGNDataset(path, device, max_games=100)
 dataloader = DataLoader(
     dataset=dataset,
     batch_size=config.batch_size,
 )
 
-# Seperate array entry for each game/move set
-device = torch.device("cpu")
 model = t.ChessModel()
-
 model.to(device)
+model.train()
 
 loss_fn = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 
 for epoch in range(config.num_epochs):
-    print(f"--- Epoch {epoch + 1} ---")
+    print(f"--- Epoch {epoch} ---")
     model.train()
     optimizer.zero_grad()
     for i, (input, target) in enumerate(dataloader):
         input.to(device)
+        target.to(device)
         output = model(input)
         # Reshape output and target for CrossEntropyLoss
         output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
@@ -37,6 +37,7 @@ for epoch in range(config.num_epochs):
         optimizer.step()
         # print(f"Epoch {epoch}: Loss = {loss.item()}")
 
+        # if i % 100 == 0:
         # TODO: Validate against other data than input
         model.eval()
         with torch.no_grad():
@@ -45,3 +46,4 @@ for epoch in range(config.num_epochs):
             val_target = target.view(-1)
             val_loss = loss_fn(val_output, val_target)
             print(f"Epoch {epoch}: Loss = {loss.item()} Validation Loss = {val_loss.item()}")
+        model.train()

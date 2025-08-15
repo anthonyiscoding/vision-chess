@@ -50,7 +50,7 @@ class ChessModel(nn.Module):
     def forward(self, idx):
         _, seq_len = idx.shape
         token_embeds = self.token_embedding(idx)
-        positional_embeds = self.positional_embedding(torch.arange(seq_len))
+        positional_embeds = self.positional_embedding(torch.arange(seq_len, device=idx.device))
 
         x = token_embeds + positional_embeds
         x = self.transformer_blocks(x)
