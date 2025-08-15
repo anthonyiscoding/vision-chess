@@ -4,6 +4,7 @@ import chessgpt.model.config as config
 from torch.utils.data import DataLoader
 from chessgpt.model import tokenizer, transformer as t
 from chessgpt.model.data import PGNDataset
+from datetime import datetime
 
 path = "data/Carlsen.pgn"
 
@@ -37,13 +38,14 @@ for epoch in range(config.num_epochs):
         optimizer.step()
         # print(f"Epoch {epoch}: Loss = {loss.item()}")
 
-        # if i % 100 == 0:
-        # TODO: Validate against other data than input
-        model.eval()
-        with torch.no_grad():
-            val_output = model(input)
-            val_output = val_output.view(-1, val_output.size(-1))
-            val_target = target.view(-1)
-            val_loss = loss_fn(val_output, val_target)
-            print(f"Epoch {epoch}: Loss = {loss.item()} Validation Loss = {val_loss.item()}")
-        model.train()
+        if i % 100 == 0:
+            model.eval()
+            with torch.no_grad():
+                val_output = model(input)
+                val_output = val_output.view(-1, val_output.size(-1))
+                val_target = target.view(-1)
+                val_loss = loss_fn(val_output, val_target)
+                print(f"Epoch {epoch} | Round {i}: Loss = {loss.item()} Validation Loss = {val_loss.item()}")
+            model.train()
+
+torch.save(model.state_dict(), f"model-{datetime.now(): %Y-%m-%d-%H-%M-%S}.pth")
