@@ -19,7 +19,7 @@ model.to(device)
 model.train()
 
 loss_fn = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-6)
 
 for epoch in range(config.num_epochs):
     print(f"--- Epoch {epoch} ---")
