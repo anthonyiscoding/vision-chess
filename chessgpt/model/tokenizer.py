@@ -2,6 +2,7 @@ from chess.pgn import Game
 
 # Naive implementation, encodes strings like "a1a1" which aren't valid moves.
 def to_embedding(move: str):
+    # print(f"Got move: {move}")
     if move == '<|startofgame|>':
         return 4096
 
@@ -36,7 +37,9 @@ def from_embedding(embedding: int) -> str:
 def encode(game: Game):
     token_ids = []
     for m in game.mainline_moves():
-        token_ids.append(to_embedding(m.uci()))
+        # [:4] is for trimming off promotions at the end of moves
+        # TODO: Figure out if promotions are relevant to the model
+        token_ids.append(to_embedding(m.uci()[:4]))
 
     return token_ids
 
