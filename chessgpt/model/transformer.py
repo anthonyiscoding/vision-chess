@@ -11,7 +11,9 @@ import chessgpt.model.config as config
 input_dim = config.emb_dim
 hidden_dim = config.hidden_dim
 ff = FeedForward(
-    gate_proj=nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.LayerNorm(hidden_dim)),
+    gate_proj=nn.Sequential(
+        nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.LayerNorm(hidden_dim)
+    ),
     down_proj=nn.Linear(hidden_dim, input_dim),
 )
 
@@ -50,11 +52,13 @@ class ChessModel(nn.Module):
     def forward(self, idx):
         _, seq_len = idx.shape
         token_embeds = self.token_embedding(idx)
-        positional_embeds = self.positional_embedding(torch.arange(seq_len, device=idx.device))
+        positional_embeds = self.positional_embedding(
+            torch.arange(seq_len, device=idx.device)
+        )
 
         x = token_embeds + positional_embeds
         x = self.transformer_blocks(x)
         x = self.final_norm(x)
-        x = self.out_head(x) # logits
+        x = self.out_head(x)  # logits
 
         return x
