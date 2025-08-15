@@ -3,8 +3,9 @@ from torch.utils.data import Dataset
 from chessgpt.model import tokenizer
 from chess import pgn
 
+# TODO: Determine what a good default sequence length is
 class PGNDataset(Dataset):
-    def __init__(self, path):
+    def __init__(self, path, max_seq_len=20):
         super().__init__()
 
         self.input_ids = []
@@ -18,9 +19,9 @@ class PGNDataset(Dataset):
 
                 token_ids = tokenizer.encode(game)
             
-                for i in range(0, len(token_ids)):
-                    input_chunk = token_ids[i:i + len(token_ids)] 
-                    target_chunk = token_ids[i + 1: i + len(token_ids) + 1]
+                for i in range(0, len(token_ids) - max_seq_len):
+                    input_chunk = token_ids[i:i + max_seq_len]
+                    target_chunk = token_ids[i + 1: i + max_seq_len + 1]
 
                     self.input_ids.append(torch.tensor(input_chunk))
                     self.target_ids.append(torch.tensor(target_chunk))
