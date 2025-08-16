@@ -40,27 +40,23 @@ model.train()
 loss_fn = torch.nn.CrossEntropyLoss()
 # loss_fn = torch.nn.Loss
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
-# scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 for epoch in range(config.num_epochs):
     print(f"--- Epoch {epoch} ---")
     model.train()
     for i, (input, target) in enumerate(training_dataloader):
         optimizer.zero_grad()
-        # input.to(device)
-        # target.to(device)
         output = model(input)
-        # Reshape output and target for CrossEntropyLoss
         output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
         target = input.view(-1)  # (batch*seq_len,)
         loss = loss_fn(output, target)
         loss.backward()
         optimizer.step()
-        # scheduler.step()
+        scheduler.step()
 
     model.eval()
     for v_i, (val_input, val_target) in enumerate(validation_dataloader):
-        # optimizer.zero_grad()
         with torch.no_grad():
             val_output = model(val_input)
             val_output = val_output.view(-1, val_output.size(-1))
