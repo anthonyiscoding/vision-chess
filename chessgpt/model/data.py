@@ -5,8 +5,9 @@ from chess import pgn
 
 
 # TODO: Determine what a good default sequence length is
+# TODO: Add steps so we can have more max_games and less over training on the same small subset of games
 class PGNDataset(Dataset):
-    def __init__(self, path, device, max_seq_len=config.max_seq_len, max_games=None):
+    def __init__(self, path, device, max_seq_len=config.max_seq_len, max_games=None, step=2):
         super().__init__()
 
         self.input_ids = []
@@ -25,7 +26,7 @@ class PGNDataset(Dataset):
 
                 token_ids = tokenizer.encode(game)
 
-                for i in range(0, len(token_ids) - max_seq_len):
+                for i in range(0, len(token_ids) - max_seq_len, step):
                     input_chunk = token_ids[i : i + max_seq_len]
                     target_chunk = token_ids[i + 1 : i + max_seq_len + 1]
 
