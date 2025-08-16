@@ -9,7 +9,7 @@ path = "data/Carlsen.pgn"
 max_games = config.max_games
 
 device = torch.device("mps")
-full_dataset = PGNDataset(path, device, max_games=config.max_games)
+full_dataset = PGNDataset(path, device, max_games=max_games)
 # full_dataloader = DataLoader(
 #     dataset=dataset,
 #     batch_size=config.batch_size
