@@ -1,17 +1,35 @@
 import torch
 import chessgpt.model.config as config
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from chessgpt.model import transformer as t
 from chessgpt.model.data import PGNDataset
 from datetime import datetime
 
 path = "data/Carlsen.pgn"
+max_games = config.max_games
 
 device = torch.device("mps")
-dataset = PGNDataset(path, device, max_games=200)
-dataloader = DataLoader(
-    dataset=dataset,
+full_dataset = PGNDataset(path, device, max_games=config.max_games)
+# full_dataloader = DataLoader(
+#     dataset=dataset,
+#     batch_size=config.batch_size
+# )
+train_split_ratio = 0.8
+training_size = int(train_split_ratio * len(full_dataset))
+validation_size = len(full_dataset) - training_size
+
+training_dataset, validation_dataset = random_split(full_dataset, [training_size, validation_size])
+
+training_dataloader = DataLoader(
+    dataset=training_dataset,
     batch_size=config.batch_size,
+    shuffle=True
+)
+
+validation_dataloader = DataLoader(
+    dataset=validation_dataset,
+    batch_size=config.batch_size,
+    shuffle=False
 )
 
 model = t.ChessModel()
@@ -26,7 +44,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 for epoch in range(config.num_epochs):
     print(f"--- Epoch {epoch} ---")
     model.train()
-    for i, (input, target) in enumerate(dataloader):
+    for i, (input, target) in enumerate(training_dataloader):
         optimizer.zero_grad()
         # input.to(device)
         # target.to(device)
@@ -39,14 +57,17 @@ for epoch in range(config.num_epochs):
         optimizer.step()
         # scheduler.step()
 
-        if i % 100 == 0:
-            model.eval()
-            with torch.no_grad():
-                val_output = model(input)
-                val_output = val_output.view(-1, val_output.size(-1))
-                val_target = target.view(-1)
-                val_loss = loss_fn(val_output, val_target)
-                print(f"Epoch {epoch} | Round {i}: Loss = {loss.item():.5f} Validation Loss = {val_loss.item():.5f}")
-            model.train()
-    if epoch % 2 == 0 and config.max_games > 500:
+    model.eval()
+    for v_i, (val_input, val_target) in enumerate(validation_dataloader):
+        # optimizer.zero_grad()
+        with torch.no_grad():
+            val_output = model(val_input)
+            val_output = val_output.view(-1, val_output.size(-1))
+            val_target = val_target.view(-1)
+            val_loss = loss_fn(val_output, val_target)
+    
+    # TODO: Running loss?
+    print(f"Epoch {epoch}: Loss = {loss.item():.5f} Validation Loss = {val_loss.item():.5f}")
+
+    if epoch % 2 == 0 and max_games > 500:
         torch.save(model.state_dict(), f"model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}.pth")
