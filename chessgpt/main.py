@@ -7,6 +7,7 @@ from datetime import datetime
 
 path = "data/Carlsen.pgn"
 max_games = config.max_games
+save_model = True
 
 device = torch.device("mps")
 full_dataset = PGNDataset(path, device, max_games=max_games)
@@ -69,5 +70,5 @@ for epoch in range(config.num_epochs):
     # TODO: Running loss?
     print(f"Epoch {epoch}: Loss = {loss.item():.5f} Validation Loss = {val_loss.item():.5f}")
 
-    if epoch % 2 == 0 and max_games > 500:
+    if epoch % 2 == 0 and save_model:
         torch.save(model.state_dict(), f"model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}.pth")
