@@ -58,9 +58,10 @@ def pgn_to_npz(input, batch_size, output_dir):
         reader = read_pgn(f)
         move_list = [m for m in list(reader) if m is not None]
 
-        for i in range(0, len(move_list), batch_size):
-            start = i - batch_size
-            end = i
+        loops = list(range(0, len(move_list), batch_size))
+        for i in loops:
+            start = i
+            end = min(i + batch_size, len(move_list)) - 1
             try:
                 write_np(
                     move_list[start : end],
