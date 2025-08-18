@@ -33,6 +33,7 @@ def write_np(
     np.savez(f"{output_dir}/training/{file_stem}.npz", *training_array)
     np.savez(f"{output_dir}/validation/{file_stem}.npz", *validation_array)
 
+
 def read_npz(file, n: str | bool):
     move_collection: np = np.load(file)
 
@@ -46,30 +47,39 @@ def read_npz(file, n: str | bool):
     for k in keys:
         print(move_collection[k])
 
+
 def pgn_to_npz(input, batch_size, output_dir):
     base_path = Path(input)
     file_glob = f"*.pgn"
     pgn_files = [f for f in base_path.glob(file_glob) if f.is_file()]
 
-    for i, file in enumerate(pgn_files):
+    for file in pgn_files:
         f = str(file)
         reader = read_pgn(f)
-        move_list = [m for m in list(itertools.islice(reader, batch_size)) if m is not None]
+        move_list = [m for m in list(reader) if m is not None]
 
-        while len(move_list):
+        for i in range(0, len(move_list), batch_size):
+            start = i - batch_size
+            end = i
             try:
-                # move_list = np.array(move_list)
-                write_np(move_list, f"{file.stem}-{i}", output_dir)
-                move_list = [m for m in list(itertools.islice(reader, batch_size)) if m is not None]
+                write_np(
+                    move_list[start : end],
+                    f"{file.stem}-{start}-{end}",
+                    output_dir,
+                )
             except StopIteration:
                 break
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Turn PGN files into NumPy arrays for processing"
     )
     parser.add_argument(
-        "--input", type=str, default="./data", help="A file or path containing .pgn files"
+        "--input",
+        type=str,
+        default="./data",
+        help="A file or path containing .pgn files",
     )
     parser.add_argument(
         "--batch-size", type=int, help="Maximum number of games per file", default=2000
