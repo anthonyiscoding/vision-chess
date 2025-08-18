@@ -204,9 +204,14 @@ __marimo__/
 
 # Pytorch
 *.pth
+*.pt
 
 # Data
 data/
+models/
+*.pgn
+*.np
+*.npz
 
 # VSCode
 .vscode

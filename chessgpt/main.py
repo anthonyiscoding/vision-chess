@@ -67,4 +67,4 @@ for epoch in range(config.num_epochs):
     print(f"Epoch {epoch}: Loss = {loss.item():.5f} Validation Loss = {val_loss.item():.5f}")
 
     if epoch % 2 == 0 and save_model:
-        torch.save(model.state_dict(), f"model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}.pth")
+        torch.save(model.state_dict(), f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}.pt")
