@@ -5,7 +5,6 @@ from chess import pgn
 
 
 # TODO: Determine what a good default sequence length is
-# TODO: Add steps so we can have more max_games and less over training on the same small subset of games
 class PGNDataset(Dataset):
     def __init__(self, path, device, max_seq_len=config.max_seq_len, max_games=None, step=2):
         super().__init__()
