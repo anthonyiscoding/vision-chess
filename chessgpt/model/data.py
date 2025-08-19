@@ -6,7 +6,6 @@ from chessgpt.model import tokenizer, config
 from chess import pgn
 
 
-# TODO: Determine what a good default sequence length is
 class PGNDataset(Dataset):
     def __init__(
         self, path, device, max_seq_len=config.max_seq_len, max_games=None, step=2
@@ -25,7 +24,6 @@ class PGNDataset(Dataset):
                     game_count += 1
                 if max_games and game_count > max_games:
                     break
-                # print(f"Reading game: {game.headers["Event"]}, {game.headers["Date"]}, {game.headers["Round"]}")
 
                 token_ids = tokenizer.encode_game(game)
 
@@ -50,17 +48,17 @@ class NpyDataset(Dataset):
         self,
         files: list[str],
         device,
-        # batch_size=config.batch_size,
         max_seq_len=config.max_seq_len,
-        step=1,
+        # step=1,
     ):
         super().__init__()
 
         self.samples = []
         self.device = device
         self.max_seq_len = max_seq_len
-        self.step = step
+        # self.step = step
 
+        # TODO: Optimize this and __len__, very inefficient method currently
         for f in files:
             games: np.ndarray = np.load(f, mmap_mode="r")
             sample_count = len(games)
