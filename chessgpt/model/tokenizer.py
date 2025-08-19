@@ -34,13 +34,17 @@ def from_embedding(embedding: int) -> str:
 
     return files[file_start] + ranks[rank_start] + files[file_end] + ranks[rank_end]
 
-def encode(game: Game):
+def encode_game(game: Game):
     token_ids = []
     for m in game.mainline_moves():
         # [:4] is for trimming off promotions at the end of moves
         # TODO: Figure out if promotions are relevant to the model
         token_ids.append(to_embedding(m.uci()[:4]))
 
+    return token_ids
+
+def encode_array(move_list):
+    token_ids = [to_embedding(m)[:4] for m in move_list]
     return token_ids
 
 def decode(token_ids: list[int]):

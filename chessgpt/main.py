@@ -2,7 +2,8 @@ import torch
 import chessgpt.model.config as config
 from torch.utils.data import DataLoader, random_split
 from chessgpt.model import transformer as t
-from chessgpt.model.data import PGNDataset
+from chessgpt.model.data import PGNDataset, NPZDataset
+from chessgpt.pgn_to_npz import list_npz_files
 from datetime import datetime
 
 path = "data/Carlsen.pgn"
@@ -10,11 +11,9 @@ max_games = config.max_games
 save_model = True
 
 device = torch.device("mps")
-full_dataset = PGNDataset(path, device, max_games=max_games)
-# full_dataloader = DataLoader(
-#     dataset=dataset,
-#     batch_size=config.batch_size
-# )
+files = list_npz_files("data/training") #TODO: Read validation and training sets separately
+full_dataset = NPZDataset(files, device, batch_size=100)
+# full_dataset = PGNDataset(path, device, max_games=max_games)
 train_split_ratio = 0.8
 training_size = int(train_split_ratio * len(full_dataset))
 validation_size = len(full_dataset) - training_size
@@ -24,7 +23,7 @@ training_dataset, validation_dataset = random_split(full_dataset, [training_size
 training_dataloader = DataLoader(
     dataset=training_dataset,
     batch_size=config.batch_size,
-    shuffle=True
+    shuffle=True,
 )
 
 validation_dataloader = DataLoader(
@@ -38,7 +37,6 @@ model.to(device)
 model.train()
 
 loss_fn = torch.nn.CrossEntropyLoss()
-# loss_fn = torch.nn.Loss
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
