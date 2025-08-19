@@ -37,7 +37,7 @@ mha = MultiHeadAttention(
 class ChessModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.token_embedding = nn.Embedding(config.vocabulary_size, config.emb_dim)
+        self.token_embedding = nn.Embedding(config.vocabulary_size, config.emb_dim, padding_idx=0)
         self.positional_embedding = nn.Embedding(config.max_seq_len, config.emb_dim)
         self.transformer_blocks = nn.Sequential(
             *[
@@ -52,6 +52,9 @@ class ChessModel(nn.Module):
     def forward(self, idx):
         _, seq_len = idx.shape
         token_embeds = self.token_embedding(idx)
+        # Mask out padding embeddings (padding_idx=0)
+        mask = (idx != 0).unsqueeze(-1)  # shape: (batch, seq_len, 1)
+        token_embeds = token_embeds * mask
         positional_embeds = self.positional_embedding(
             torch.arange(seq_len, device=idx.device)
         )

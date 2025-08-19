@@ -2,9 +2,14 @@ from chess.pgn import Game
 
 # Naive implementation, encodes strings like "a1a1" which aren't valid moves.
 def to_embedding(move: str):
-    # print(f"Got move: {move}")
     if move == '<|startofgame|>':
-        return 4096
+        return 4097
+
+    if move == '<|endofgame|>':
+        return 4098 
+
+    if move == 'None' or move == None:
+        return 0
 
     assert len(move) == 4, "Move must be a string of length 4"
     files = ["a", "b", "c", "d", "e", "f", "g", "h"]
@@ -15,12 +20,20 @@ def to_embedding(move: str):
     file_end = files.index(move[2])
     rank_end = ranks.index(move[3])
 
-    return file_start + 8 * rank_start + 64 * file_end + 512 * rank_end
+    return file_start + 8 * rank_start + 64 * file_end + 512 * rank_end + 1
 
 def from_embedding(embedding: int) -> str:
-    if embedding == 4096:
+    if embedding == 4097:
         return '<|startofgame|>'
     
+    if embedding == 4098:
+        return '<|endofgame|>'
+    
+    assert embedding != 0, "Embeddings should not contain 0. 0 should have been masked out in earlier steps."
+
+    # Lookup is still zero indexed even though we won't encode embedding == 0. 
+    embedding -= 1
+
     files = ["a", "b", "c", "d", "e", "f", "g", "h"]
     ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
 
@@ -44,7 +57,7 @@ def encode_game(game: Game):
     return token_ids
 
 def encode_array(move_list):
-    token_ids = [to_embedding(m)[:4] for m in move_list]
+    token_ids = [to_embedding(m[:4]) for m in move_list]
     return token_ids
 
 def decode(token_ids: list[int]):

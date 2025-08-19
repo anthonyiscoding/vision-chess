@@ -2,7 +2,6 @@ import argparse
 from functools import reduce
 import random
 from pathlib import Path
-from itertools import zip_longest
 import chess.pgn
 import numpy as np
 
