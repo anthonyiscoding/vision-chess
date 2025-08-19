@@ -71,7 +71,7 @@ for epoch in range(config.num_epochs):
             loss = loss_fn(output[mask], target[mask])
             loss.backward()
             optimizer.step()
-            total_loss += loss.item()
+            total_loss += loss.item() * mask.sum().item()
             total_tokens += mask.sum().item()
             running_loss = total_loss / total_tokens if total_tokens > 0 else float('inf')
             if i % 10 == 0:
