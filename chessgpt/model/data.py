@@ -7,7 +7,9 @@ from chess import pgn
 
 # TODO: Determine what a good default sequence length is
 class PGNDataset(Dataset):
-    def __init__(self, path, device, max_seq_len=config.max_seq_len, max_games=None, step=2):
+    def __init__(
+        self, path, device, max_seq_len=config.max_seq_len, max_games=None, step=2
+    ):
         super().__init__()
 
         self.input_ids = []
@@ -41,8 +43,16 @@ class PGNDataset(Dataset):
     def __getitem__(self, index):
         return self.input_ids[index], self.target_ids[index]
 
+
 class NPZDataset(Dataset):
-    def __init__(self, files: list[str], device, batch_size=config.batch_size, max_seq_len = config.max_seq_len, step=1):
+    def __init__(
+        self,
+        files: list[str],
+        device,
+        batch_size=config.batch_size,
+        max_seq_len=config.max_seq_len,
+        step=1,
+    ):
         super().__init__()
 
         self.samples = []
@@ -52,19 +62,22 @@ class NPZDataset(Dataset):
         self.step = step
 
         for f in files:
-            move_collection = np.load(str(f))
-            sample_count = len(move_collection.files)
+            move_collection: np.ndarray = np.load(str(f))
+            sample_count = len(move_collection)
             for i in range(0, sample_count, batch_size):
-                if i + batch_size > sample_count:
-                    continue 
+                start = i
+                end = i + batch_size
 
-                start = move_collection.files[i]
-                end = move_collection.files[i + batch_size]
+                # TODO: If not a full batch do we just skip? I assume we wouldn't want partial batches.
+                if end > sample_count:
+                    continue
+                    # end = sample_count
+
                 self.samples.append((f, start, end))
-    
+
     def __len__(self):
         return len(self.samples)
-    
+
     def __getitem__(self, index):
         file_path, start, end = self.samples[index]
         game_collection = np.load(file_path)
@@ -72,9 +85,9 @@ class NPZDataset(Dataset):
         games = game_collection[start:end]
         for g in games:
             input_ids = []
-            target_ids = [] 
+            target_ids = []
 
-            token_ids = tokenizer.encode_array(game_collection[g])
+            token_ids = tokenizer.encode_array(g)
             for i in range(0, len(token_ids) - self.max_seq_len, self.step):
                 input_chunk = token_ids[i : i + self.max_seq_len]
                 target_chunk = token_ids[i + 1 : i + self.max_seq_len + 1]
@@ -82,4 +95,4 @@ class NPZDataset(Dataset):
                 input_ids.append(torch.tensor(input_chunk, device=self.device))
                 target_ids.append(torch.tensor(target_chunk, device=self.device))
 
-        return input_ids, target_ids 
+        return input_ids, target_ids
