@@ -7,21 +7,15 @@ from chessgpt.pgn_to_npy import list_npy_files
 from datetime import datetime
 from torch.nn.utils.rnn import pad_sequence
 
-# path = "data/Carlsen.pgn"
-files = list_npy_files("data/test/training") #TODO: Read validation and training sets separately
-max_games = config.max_games
 save_model = True
-
 device = torch.device("mps")
-full_dataset = NpyDataset(files, device)
-# full_dataset = PGNDataset(path, device, max_games=max_games)
-train_split_ratio = 0.8
-training_size = int(train_split_ratio * len(full_dataset))
-validation_size = len(full_dataset) - training_size
 
-training_dataset, validation_dataset = random_split(full_dataset, [training_size, validation_size])
+training_files = list_npy_files("data/training")
+validation_files = list_npy_files("data/validation")
 
-# TODO: Could I have the dataset return a batch of data from __getitem__ and then collate it after?
+training_dataset = NpyDataset(training_files, device)
+validation_dataset = NpyDataset(validation_files, device) 
+
 def collate_fn(batch):
     input_ids, target_ids = zip(*batch)
     input_ids = pad_sequence(input_ids, batch_first=True, padding_value=0)
