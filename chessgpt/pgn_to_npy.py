@@ -1,7 +1,8 @@
 import argparse
-import itertools
+from functools import reduce
 import random
 from pathlib import Path
+from itertools import zip_longest
 import chess.pgn
 import numpy as np
 
@@ -24,17 +25,32 @@ def write_np(
     if shuffle:
         random.shuffle(move_collection)
 
-    training_size = int(len(move_collection) * training_data_ratio)
-    validation_size = len(move_collection) - training_size
+    longest_array = reduce(
+        lambda x, y: x if len(x) > len(y) else y, move_collection, []
+    )
+    padded_array = []
 
-    training_array = move_collection[:training_size]
-    validation_array = move_collection[validation_size:]
+    for a in move_collection:
+        padded_array.append(
+            np.pad(
+                a,
+                (0, len(longest_array) - len(a)),
+                mode="constant",
+                constant_values=None,
+            )
+        )
 
-    np.savez(f"{output_dir}/training/{file_stem}.npz", *training_array)
-    np.savez(f"{output_dir}/validation/{file_stem}.npz", *validation_array)
+    training_size = int(len(padded_array) * training_data_ratio)
+    validation_size = len(padded_array) - training_size
+
+    training_array = padded_array[:training_size]
+    validation_array = padded_array[validation_size:]
+
+    np.save(f"{output_dir}/training/{file_stem}.npy", training_array)
+    np.save(f"{output_dir}/validation/{file_stem}.npy", validation_array)
 
 
-def read_npz(file, n: str | bool):
+def read_npy(file, n: str | bool):
     move_collection: np = np.load(file)
 
     if n is True:
@@ -48,28 +64,39 @@ def read_npz(file, n: str | bool):
         print(move_collection[k])
 
 
-def pgn_to_npz(input, batch_size, output_dir):
-    base_path = Path(input)
-    file_glob = f"*.pgn"
-    pgn_files = [f for f in base_path.glob(file_glob) if f.is_file()]
+def pgn_to_npy(input, batch_size, output_dir):
+    pgn_files = list_pgn_files(input)
 
     for file in pgn_files:
         f = str(file)
         reader = read_pgn(f)
         move_list = [m for m in list(reader) if m is not None]
 
-        loops = list(range(0, len(move_list), batch_size))
-        for i in loops:
+        for i in range(0, len(move_list), batch_size):
             start = i
             end = min(i + batch_size, len(move_list)) - 1
             try:
                 write_np(
-                    move_list[start : end],
+                    move_list[start:end],
                     f"{file.stem}-{start}-{end}",
                     output_dir,
                 )
             except StopIteration:
                 break
+
+
+def list_pgn_files(input):
+    return _list_files(input, f"*.pgn")
+
+
+def list_npy_files(input):
+    return _list_files(input, f"*.npy")
+
+
+def _list_files(input, file_glob):
+    base_path = Path(input)
+    files = [f for f in base_path.glob(file_glob) if f.is_file()]
+    return files
 
 
 if __name__ == "__main__":
@@ -102,7 +129,7 @@ if __name__ == "__main__":
         print("Input must be a single file when --read is provided")
 
     if args.read:
-        read_npz(args.input, args.read)
+        read_npy(args.input, args.read)
 
     if not args.read:
-        pgn_to_npz(args.input, args.batch_size, args.output_dir)
+        pgn_to_npy(args.input, args.batch_size, args.output_dir)
