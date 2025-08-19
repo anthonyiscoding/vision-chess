@@ -56,6 +56,8 @@ for epoch in range(config.num_epochs):
     model.train()
     total_loss = 0.0
     total_tokens = 0
+    val_total_loss = 0.0
+    val_total_tokens = 0
     for i, (input, target) in enumerate(training_dataloader):
 
         optimizer.zero_grad()
@@ -75,7 +77,7 @@ for epoch in range(config.num_epochs):
             total_tokens += mask.sum().item()
             running_loss = total_loss / total_tokens if total_tokens > 0 else float('inf')
             if i % 10 == 0:
-                print(f"Training Epoch: {epoch} | Batch: {i} | Sample input: {input[0][:2]} | Running Loss: {running_loss:.5f} | Perplexity: {torch.exp(torch.tensor(loss.item())):.5f}")
+                print(f"Training Epoch: {epoch} | Batch: {i} | Sample input: {input[0][:2]} | Running Loss: {running_loss:.5f} | Running Perplexity: {torch.exp(torch.tensor(running_loss)):.5f}")
         
        # scheduler.step()
 
@@ -95,7 +97,7 @@ for epoch in range(config.num_epochs):
                 val_total_tokens += val_mask.sum().item()
                 val_running_loss = val_total_loss / val_total_tokens if val_total_tokens > 0 else float('inf')
                 if i % 10 == 0:
-                    print(f"Validating Epoch: {epoch} | Batch: {v_i} | Sample input: {val_input[0][:2]} | Running Loss: {val_running_loss:.5f} | Perplexity: {torch.exp(torch.tensor(val_loss.item())):.5f}")
+                    print(f"Validating Epoch: {epoch} | Batch: {v_i} | Sample input: {val_input[0][:2]} | Running Loss: {val_running_loss:.5f} | Running Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}")
 
     
     train_perplexity = torch.exp(torch.tensor(running_loss))
