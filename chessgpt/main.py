@@ -5,13 +5,14 @@ from chessgpt.model import transformer as t
 from chessgpt.model.data import NpyDataset
 from chessgpt.pgn_to_npy import list_npy_files
 from datetime import datetime
+from torch.nn.utils.rnn import pad_sequence
 
-path = "data/Carlsen.pgn"
+# path = "data/Carlsen.pgn"
+files = list_npy_files("data/test/training") #TODO: Read validation and training sets separately
 max_games = config.max_games
 save_model = True
 
 device = torch.device("mps")
-files = list_npy_files("data/training") #TODO: Read validation and training sets separately
 full_dataset = NpyDataset(files, device)
 # full_dataset = PGNDataset(path, device, max_games=max_games)
 train_split_ratio = 0.8
@@ -20,9 +21,17 @@ validation_size = len(full_dataset) - training_size
 
 training_dataset, validation_dataset = random_split(full_dataset, [training_size, validation_size])
 
+# TODO: Could I have the dataset return a batch of data from __getitem__ and then collate it after?
+def collate_fn(batch):
+    input_ids, target_ids = zip(*batch)
+    input_ids = pad_sequence(input_ids, batch_first=True, padding_value=0)
+    target_ids = pad_sequence(target_ids, batch_first=True, padding_value=0)
+    return input_ids, target_ids
+
 training_dataloader = DataLoader(
     dataset=training_dataset,
     batch_size=config.batch_size,
+    collate_fn=collate_fn,
     shuffle=True,
 )
 
@@ -44,12 +53,15 @@ for epoch in range(config.num_epochs):
     print(f"--- Epoch {epoch} ---")
     model.train()
     for i, (input, target) in enumerate(training_dataloader):
+        # if i % 1000:
+        #     print(f"Epoch: {epoch} | Batch: {i} | Sample: {input[0][:2]}, {target[0][:2]}")
         optimizer.zero_grad()
-        # Mask for non-padding tokens (padding_idx=0)
-        mask = (target != 0)
         output = model(input)
         output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
         target = target.view(-1)  # (batch*seq_len,)
+
+        # Mask for non-padding tokens (padding_idx=0)
+        mask = (target != 0)
         # Only compute loss on non-padding tokens
         if mask.any():
             loss = loss_fn(output[mask], target[mask])

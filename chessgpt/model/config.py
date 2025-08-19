@@ -15,5 +15,5 @@ attn_dropout = 0.0
 transformer_layers = 6
 vocabulary_size = len(generate_all_possible_moves())
 num_epochs = 8
-batch_size = 10
+batch_size = 100
 max_games = 2500

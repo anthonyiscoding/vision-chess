@@ -52,9 +52,6 @@ class ChessModel(nn.Module):
     def forward(self, idx):
         _, seq_len = idx.shape
         token_embeds = self.token_embedding(idx)
-        # Mask out padding embeddings (padding_idx=0)
-        mask = (idx != 0).unsqueeze(-1)  # shape: (batch, seq_len, 1)
-        token_embeds = token_embeds * mask
         positional_embeds = self.positional_embedding(
             torch.arange(seq_len, device=idx.device)
         )
