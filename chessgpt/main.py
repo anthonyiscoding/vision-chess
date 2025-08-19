@@ -12,7 +12,7 @@ save_model = True
 
 device = torch.device("mps")
 files = list_npy_files("data/training") #TODO: Read validation and training sets separately
-full_dataset = NPZDataset(files, device, batch_size=100)
+full_dataset = NPZDataset(files, device)
 # full_dataset = PGNDataset(path, device, max_games=max_games)
 train_split_ratio = 0.8
 training_size = int(train_split_ratio * len(full_dataset))
