@@ -7,7 +7,7 @@ from chessgpt.pgn_to_npy import list_npy_files
 from datetime import datetime
 from torch.nn.utils.rnn import pad_sequence
 
-save_model = False
+save_model = True
 device = torch.device("mps")
 
 training_files = list_npy_files("data/training")
@@ -53,27 +53,29 @@ for epoch in range(config.num_epochs):
     print(f"--- Epoch {epoch} ---")
     model.train()
     for i, (input, target) in enumerate(training_dataloader):
-        if i % 1 == 0:
-            print(f"Epoch: {epoch} | Batch: {i} | Sample: {input[0][:2]}, {target[0][:2]}")
+        if i % 10 == 0:
+            print(f"Training Epoch: {epoch} | Batch: {i} | Sample: {input[0][:2]}, {target[0][:2]}")
         optimizer.zero_grad()
         output = model(input)
         output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
         target = target.view(-1)  # (batch*seq_len,)
 
-        # Mask for non-padding tokens (padding_idx=0)
         mask = (target != 0)
         if mask.shape[0] != output.shape[0]:
             print(f"Skipping training batch {i} due to shape mismatch: mask {mask.shape}, output {output.shape}")
             continue
-        # Only compute loss on non-padding tokens
         if mask.any():
             loss = loss_fn(output[mask], target[mask])
+            if i % 10 == 0:
+                print(f"Loss: {loss.item():.5f}")
             loss.backward()
             optimizer.step()
             scheduler.step()
 
     model.eval()
     for v_i, (val_input, val_target) in enumerate(validation_dataloader):
+        if i % 10 == 0:
+            print(f"Validating Epoch: {epoch} | Batch: {v_i} | Sample: {val_input[0][:2]}, {val_target[0][:2]}")
         with torch.no_grad():
             val_output = model(val_input)
             val_output = val_output.view(-1, val_output.size(-1))
@@ -84,6 +86,8 @@ for epoch in range(config.num_epochs):
                 continue
             if val_mask.any():
                 val_loss = loss_fn(val_output[val_mask], val_target[val_mask])
+                if v_i % 10 == 0:
+                    print(f"Validation Loss: {val_loss.item():.5f}")
     
     # TODO: Running loss?
     print(f"Epoch {epoch}: Loss = {loss.item():.5f} Validation Loss = {val_loss.item():.5f}")
