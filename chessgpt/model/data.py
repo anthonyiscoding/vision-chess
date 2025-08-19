@@ -44,7 +44,7 @@ class PGNDataset(Dataset):
         return self.input_ids[index], self.target_ids[index]
 
 
-class NPZDataset(Dataset):
+class NpyDataset(Dataset):
     def __init__(
         self,
         files: list[str],

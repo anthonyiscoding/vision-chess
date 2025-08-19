@@ -2,7 +2,7 @@ import torch
 import chessgpt.model.config as config
 from torch.utils.data import DataLoader, random_split
 from chessgpt.model import transformer as t
-from chessgpt.model.data import PGNDataset, NPZDataset
+from chessgpt.model.data import NpyDataset
 from chessgpt.pgn_to_npy import list_npy_files
 from datetime import datetime
 
@@ -12,7 +12,7 @@ save_model = True
 
 device = torch.device("mps")
 files = list_npy_files("data/training") #TODO: Read validation and training sets separately
-full_dataset = NPZDataset(files, device)
+full_dataset = NpyDataset(files, device)
 # full_dataset = PGNDataset(path, device, max_games=max_games)
 train_split_ratio = 0.8
 training_size = int(train_split_ratio * len(full_dataset))
