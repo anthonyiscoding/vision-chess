@@ -80,7 +80,7 @@ for epoch in range(config.num_epochs):
             val_target = val_target.view(-1)
             val_mask = (val_target != 0)
             if val_mask.shape[0] != val_output.shape[0]:
-                print(f"Skipping validation batch {i} due to shape mismatch: mask {mask.shape}, output {output.shape}")
+                print(f"Skipping validation batch {v_i} due to shape mismatch: mask {val_mask.shape}, output {val_output.shape}")
                 continue
             if val_mask.any():
                 val_loss = loss_fn(val_output[val_mask], val_target[val_mask])
