@@ -1,6 +1,7 @@
 import argparse
 from functools import reduce
 import random
+import math
 from pathlib import Path
 import chess.pgn
 import numpy as np
@@ -42,11 +43,10 @@ def write_np(
             )
         )
 
-    training_size = int(len(padded_array) * training_data_ratio)
-    validation_size = len(padded_array) - training_size
+    split_at = int(len(padded_array) * training_data_ratio)
 
-    training_array = padded_array[:training_size]
-    validation_array = padded_array[validation_size:]
+    training_array = padded_array[:split_at]
+    validation_array = padded_array[split_at:]
 
     np.save(f"{output_dir}/training/{file_stem}.npy", training_array)
     np.save(f"{output_dir}/validation/{file_stem}.npy", validation_array)
