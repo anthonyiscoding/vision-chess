@@ -38,6 +38,7 @@ training_dataloader = DataLoader(
 validation_dataloader = DataLoader(
     dataset=validation_dataset,
     batch_size=config.batch_size,
+    collate_fn=collate_fn,
     shuffle=False
 )
 
