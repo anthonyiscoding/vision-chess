@@ -91,13 +91,15 @@ for epoch in range(config.num_epochs):
                 continue
             if val_mask.any():
                 val_loss = loss_fn(val_output[val_mask], val_target[val_mask])
+                val_total_loss += val_loss.item() * val_mask.sum().item()
+                val_total_tokens += val_mask.sum().item()
+                val_running_loss = val_total_loss / val_total_tokens if val_total_tokens > 0 else float('inf')
                 if i % 10 == 0:
-                    print(f"Validating Epoch: {epoch} | Batch: {v_i} | Sample input: {val_input[0][:2]} | Loss: {val_loss.item():.5f}")
+                    print(f"Validating Epoch: {epoch} | Batch: {v_i} | Sample input: {val_input[0][:2]} | Running Loss: {val_running_loss:.5f} | Perplexity: {torch.exp(torch.tensor(val_loss.item())):.5f}")
+
     
-    avg_loss = total_loss / total_tokens if total_tokens > 0 else float('inf')
-    train_perplexity = torch.exp(torch.tensor(avg_loss))
-    # TODO: Running loss?
-    print(f"Epoch {epoch}: Avg loss = {avg_loss:.5f} | Avg Perplexity: {train_perplexity:.5f} ")
+    train_perplexity = torch.exp(torch.tensor(running_loss))
+    print(f"Epoch {epoch}: Avg Loss = {running_loss:.5f} | Avg Perplexity: {train_perplexity:.5f} | Avg Val Loss: {val_running_loss:.5f} | Avg Val Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}")
 
     if epoch % 2 == 0 and save_model:
         torch.save(model.state_dict(), f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}.pt")
