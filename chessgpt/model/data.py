@@ -81,4 +81,11 @@ class NpyDataset(Dataset):
         input_ids = torch.tensor(token_ids[:game_length], device=self.device)
         target_ids = torch.tensor(token_ids[1 : game_length + 1], device=self.device)
 
+        # TODO: Compare lengths properly (.shape?)
+        # if len(input_ids) != len(target_ids):
+        #     raise IndexError
+        
+        # if len(input_ids) < 1:
+        #     raise IndexError
+
         return input_ids, target_ids

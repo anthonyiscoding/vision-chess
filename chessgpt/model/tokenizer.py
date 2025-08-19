@@ -1,6 +1,7 @@
 from chess.pgn import Game
 
 # Naive implementation, encodes strings like "a1a1" which aren't valid moves.
+# TODO: Improve move detection
 def to_embedding(move: str):
     if move == '<|startofgame|>':
         return 4097
@@ -8,7 +9,7 @@ def to_embedding(move: str):
     if move == '<|endofgame|>':
         return 4098 
 
-    if move == 'None' or move == None:
+    if move == 'None' or move == None or move == 'nan':
         return 0
 
     assert len(move) == 4, "Move must be a string of length 4"
