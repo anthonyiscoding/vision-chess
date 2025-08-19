@@ -8,14 +8,17 @@ import numpy as np
 
 def read_pgn(file: str):
     with open(file, mode="r") as f:
-        game = chess.pgn.read_game(f)
+        game = True
 
         while game:
-            moves = [m.uci() for m in game.mainline_moves()]
-            yield moves
-            game = chess.pgn.read_game(f)
-
-    yield None
+            try:
+                game = chess.pgn.read_game(f)
+                moves = [m.uci() for m in game.mainline_moves()]
+                yield moves
+            except:
+                continue
+    
+    return None # TODO: Should probably raise StopIteration
 
 
 def write_np(
@@ -98,6 +101,7 @@ def _list_files(input, file_glob):
     return files
 
 
+# TODO: Add progress bar for npy file writing
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Turn PGN files into NumPy arrays for processing"
