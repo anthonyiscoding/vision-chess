@@ -1,4 +1,5 @@
 import torch
+import random
 import numpy as np
 from torch.utils.data import Dataset
 from chessgpt.model import tokenizer, config
@@ -61,27 +62,25 @@ class NpyDataset(Dataset):
         self.step = step
 
         for f in files:
-            move_collection: np.ndarray = np.load(f, mmap_mode='r')
-            sample_count = len(move_collection)
+            games: np.ndarray = np.load(f, mmap_mode="r")
+            sample_count = len(games)
             for i in range(0, sample_count):
-                self.samples.append((f, i))
+                # Randomly limit game length so we get games at every position
+                game_length = min(len(games[i]), self.max_seq_len)
+                game_length = random.randint(1, game_length)
+                self.samples.append((f, i, game_length))
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, index):
-        file_path, i = self.samples[index]
-        games = np.load(file_path, mmap_mode='r')
+        file_path, i, game_length = self.samples[index]
+        games = np.load(file_path, mmap_mode="r")
+        game = games[i]
 
-        input_ids = []
-        target_ids = []
+        token_ids = tokenizer.encode_array(game)
 
-        token_ids = tokenizer.encode_array(games[i])
-        for i in range(0, len(token_ids) - self.max_seq_len, self.step):
-            input_chunk = token_ids[i : i + self.max_seq_len]
-            target_chunk = token_ids[i + 1 : i + self.max_seq_len + 1]
-
-            input_ids.append(torch.tensor(input_chunk, device=self.device))
-            target_ids.append(torch.tensor(target_chunk, device=self.device))
+        input_ids = torch.tensor(token_ids[:game_length], device=self.device)
+        target_ids = torch.tensor(token_ids[1 : game_length + 1], device=self.device)
 
         return input_ids, target_ids
