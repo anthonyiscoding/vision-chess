@@ -1,4 +1,4 @@
-from chessgpt.model.dataset import PGNDataset
+from vision.model.data import PGNDataset
 from pprint import pp
 from chess import pgn
 

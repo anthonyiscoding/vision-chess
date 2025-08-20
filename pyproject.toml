@@ -1,5 +1,5 @@
 [project]
-name = "chessgpt"
+name = "vision"
 version = "0.1.0"
 description = "Train transformers to play chess"
 authors = [

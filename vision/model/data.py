@@ -2,7 +2,7 @@ import torch
 import random
 import numpy as np
 from torch.utils.data import Dataset
-from chessgpt.model import tokenizer, config
+from vision.model import tokenizer, config
 from chess import pgn
 from typing import Literal
 

@@ -1,4 +1,4 @@
-from chessgpt.model.tokenizer import generate_all_possible_moves
+from vision.model.tokenizer import generate_all_possible_moves
 
 # Small FF network for testing
 emb_dim = 1024

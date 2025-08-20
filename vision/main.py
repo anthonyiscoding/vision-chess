@@ -1,10 +1,10 @@
 import torch
-import chessgpt.model.config as config
+import vision.model.config as config
 from torch.utils.data import DataLoader
-from chessgpt.model import transformer as t
-from chessgpt.model.data import NpyDataset
-from chessgpt.pgn_to_npy import list_npy_files
-from chessgpt.model.tokenizer import special_tokens_to_embeddings
+from vision.model import transformer as t
+from vision.model.data import NpyDataset
+from vision.pgn_to_npy import list_npy_files
+from vision.model.tokenizer import special_tokens_to_embeddings
 from datetime import datetime
 from torch.nn.utils.rnn import pad_sequence
 

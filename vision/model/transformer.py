@@ -6,7 +6,7 @@ from torchtune.modules import (
     RotaryPositionalEmbeddings,
 )
 from torchtune.modules.transformer import TransformerSelfAttentionLayer
-import chessgpt.model.config as config
+import vision.model.config as config
 
 input_dim = config.emb_dim
 hidden_dim = config.hidden_dim
