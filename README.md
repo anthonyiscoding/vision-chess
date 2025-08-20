@@ -3,7 +3,7 @@
 # About
 Vision is a small in-progress model designed to predict the next move in a chess game using a GPT-like model.
 
-It's a hobby project helping me learn more about machine learning without using/referencing python-nnue's techniques — at least for now.
+It's a hobby project helping me learn more about machine learning without using/referencing pytorch-nnue's techniques — at least for now.
 
 # Installation
 Installation can be done with poetry:
@@ -18,17 +18,18 @@ poetry install
     ```bash
     mkdir -p data/pgn && mkdir -p data/training && mkdir -p data/validation
     ```
-    (Note: You can place the pgn files where you want but the next step expects there to be a `training` and `validation` directory within the folder you specify)
+    (Note: You can place the pgn files where you want but the next step expects there to be a `training` and `validation` directory within the output directory you specify)
+
 2. Then process these into numpy arrays using `pgn_to_npy.py`:
 
     ```bash
     $(poetry env activate)
     python vision/pgn_to_npy.py --input ./data/pgn --output-dir ./data
     ```
-    (Note: The search for PGN files isn't recursive, it will only look at the top level of the directory. There is also no progress bar output just yet.)
+    (Note: The search for PGN files isn't recursive, it will only look at the top level of the directory. There is also no progress output just yet.)
     
 
-3. Then run the model, you can also tweak `vision/model/config.py`
+3. Then run the model, you can also adjust most hyperparameters in `vision/model/config.py`
 
     ```bash
     python vision/main.py
