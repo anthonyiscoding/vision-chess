@@ -26,8 +26,6 @@ def to_embedding(move: str):
     if move in special_tokens_to_embeddings.keys():
         return special_tokens_to_embeddings[move]
 
-    assert len(move) == 4, "Move must be a string of length 4"
-
     try:
         files = ["a", "b", "c", "d", "e", "f", "g", "h"]
         ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]

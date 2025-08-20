@@ -1,8 +1,14 @@
 from chessgpt.model.tokenizer import generate_all_possible_moves
 
 # Small FF network for testing
-emb_dim = 1024
+emb_dim = 4096
 batch_size = 4
+# batch_size = 4 with emb_dim = 1024 seems to have the quickest reduction in running loss (8 -> 2 in 100 batches)
+# versus batch_size = 8 (8 -> 4 in 50 batches), (8 -> 4 in 100 too) and stabilizing after
+
+# batch_size = 4 with emb_dim = 2048 is (8 -> 10 -> 3.7 in 100 batches) 
+# TODO: I just need to use an optimization library to run tests
+
 # batch_size = emb_dim / 64 # RAM constraints on my machine, ~36GB RAM
 vocabulary_size = len(generate_all_possible_moves())
 num_epochs = 8
