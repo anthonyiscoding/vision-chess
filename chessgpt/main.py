@@ -18,6 +18,8 @@ validation_dataset = NpyDataset(validation_files, device)
 
 def collate_fn(batch):
     input_ids, target_ids = zip(*batch)
+    # if not input_ids or not target_ids:
+    #     torch.zeros(1,1, device=device), torch.zeros(1,1, device=device)
     input_ids = pad_sequence(input_ids, batch_first=True, padding_value=special_tokens_to_embeddings['<|pad|>'])
     target_ids = pad_sequence(target_ids, batch_first=True, padding_value=special_tokens_to_embeddings['<|pad|>'])
     return input_ids, target_ids
@@ -67,7 +69,7 @@ for epoch in range(config.num_epochs):
         output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
         target = target.view(-1)  # (batch*seq_len,)
 
-        mask = (target != 0)
+        mask = (target != special_tokens_to_embeddings['<|pad|>'])
         if mask.shape[0] != output.shape[0]:
             print(f"Skipping training batch {i} due to shape mismatch: mask {mask.shape}, output {output.shape}")
             continue
@@ -89,7 +91,7 @@ for epoch in range(config.num_epochs):
             val_output = model(val_input)
             val_output = val_output.view(-1, val_output.size(-1))
             val_target = val_target.view(-1)
-            val_mask = (val_target != 0)
+            val_mask = (val_target != special_tokens_to_embeddings['<|pad|>'])
             if val_mask.shape[0] != val_output.shape[0]:
                 print(f"Skipping validation batch {v_i} due to shape mismatch: mask {val_mask.shape}, output {val_output.shape}")
                 continue
@@ -105,6 +107,7 @@ for epoch in range(config.num_epochs):
     train_perplexity = torch.exp(torch.tensor(running_loss))
     print(f"Epoch {epoch}: Avg Loss = {running_loss:.5f} | Avg Perplexity: {train_perplexity:.5f} | Avg Val Loss: {val_running_loss:.5f} | Avg Val Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}")
 
-    if loss < best_loss:
-        torch.save(model.state_dict(), f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}.pt")
-        best_loss = loss
+    if running_loss < best_loss:
+        print(f"Saving model. Model had less loss than last epoch {running_loss} < {best_loss} | Perplexity: {train_perplexity}")
+        torch.save(model.state_dict(), f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}-perplexity-{train_perplexity:.3f}.pt")
+        best_loss = running_loss

@@ -99,6 +99,9 @@ class NpyDataset(Dataset):
 
         token_ids = tokenizer.encode_array(game)
 
+        # if token_ids.index(tokenizer.special_tokens_to_embeddings['<|unk|>']):
+        #     return torch.tensor([], device=self.device), torch.tensor([], device=self.device)
+
         input_ids = torch.tensor(token_ids[game_start:game_end - 1], device=self.device)
         target_ids = torch.tensor(token_ids[game_start + 1 : game_end], device=self.device)
 
