@@ -3,7 +3,7 @@
 # About
 Vision is a small in-progress model designed to predict the next move in a chess game using a GPT-like model.
 
-It's a hobby project trying to answer the question "Can an autoregressive language model play chess if trained on the right data in the right way?"
+It's a hobby project helping me learn more about machine learning without using/referencing python-nnue.
 
 # Installation
 Installation can be done with poetry:

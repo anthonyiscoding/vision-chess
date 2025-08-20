@@ -45,21 +45,18 @@ class PGNDataset(Dataset):
 
 GameStage = Literal["full", "early", "mid", "late"]
 class NpyDataset(Dataset):
+
     def __init__(
         self,
         files: list[str],
-        device,
         max_seq_len=config.max_seq_len,
         stage: GameStage = "full",
         random_length = False
-        # step=1,
     ):
         super().__init__()
 
         self.samples = []
-        self.device = device
         self.max_seq_len = max_seq_len
-        # self.step = step
 
         # TODO: Optimize this and __len__, very inefficient method currently
         for f in files:
@@ -86,7 +83,6 @@ class NpyDataset(Dataset):
                     if len(game) < 5: continue
                     # Randomly limit game length so we get games at every position
                     game_end = random.randint(game_start + 2, game_end)
-                    
                 self.samples.append((f, i, game_start, game_end))
 
     def __len__(self):
@@ -101,9 +97,9 @@ class NpyDataset(Dataset):
 
         # TODO: Skip games with unknown tokens
         # if token_ids.index(tokenizer.special_tokens_to_embeddings['<|unk|>']):
-        #     return torch.tensor([], device=self.device), torch.tensor([], device=self.device)
+        #     return torch.tensor([], device="cpu"), torch.tensor([], device="cpu")
 
-        input_ids = torch.tensor(token_ids[game_start:game_end - 1], device=self.device)
-        target_ids = torch.tensor(token_ids[game_start + 1 : game_end], device=self.device)
+        input_ids = torch.tensor(token_ids[game_start:game_end - 1], device="cpu")
+        target_ids = torch.tensor(token_ids[game_start + 1 : game_end], device="cpu")
 
         return input_ids, target_ids
