@@ -103,7 +103,7 @@ def main():
                     val_total_loss += val_loss.item() * val_mask.sum().item()
                     val_total_tokens += val_mask.sum().item()
                     val_running_loss = val_total_loss / val_total_tokens if val_total_tokens > 0 else float('inf')
-                    if i % 10 == 0:
+                    if v_i % 10 == 0:
                         print(f"Validating Epoch: {epoch} | Batch: {v_i} | Sample input: {val_input[0][:2]} | Running Loss: {val_running_loss:.5f} | Running Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}")
 
         
