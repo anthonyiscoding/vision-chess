@@ -45,8 +45,7 @@ model.train()
 
 loss_fn = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
-# TODO: Disabling the scheduler seems to have led to loss dropping more steadily
-# TODO: It may have been because I was calling scheduler every batch, but should have been every epoch
+# TODO: Disabling the scheduler temporarily during testing
 # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 print(f"Training on approximately {len(training_dataset) // config.batch_size} batches.")

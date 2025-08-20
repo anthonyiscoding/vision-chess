@@ -99,6 +99,7 @@ class NpyDataset(Dataset):
 
         token_ids = tokenizer.encode_array(game)
 
+        # TODO: Skip games with unknown tokens
         # if token_ids.index(tokenizer.special_tokens_to_embeddings['<|unk|>']):
         #     return torch.tensor([], device=self.device), torch.tensor([], device=self.device)
 
