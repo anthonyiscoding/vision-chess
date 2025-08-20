@@ -51,6 +51,8 @@ print(f"Training on approximately {len(training_dataset) // config.batch_size} b
 print(f"Validating on approximately {len(validation_dataset) // config.batch_size} batches.")
 print(f"Batch size: {config.batch_size}")
 
+
+best_loss = torch.inf 
 for epoch in range(config.num_epochs):
     print(f"--- Epoch {epoch} ---")
     model.train()
@@ -103,5 +105,6 @@ for epoch in range(config.num_epochs):
     train_perplexity = torch.exp(torch.tensor(running_loss))
     print(f"Epoch {epoch}: Avg Loss = {running_loss:.5f} | Avg Perplexity: {train_perplexity:.5f} | Avg Val Loss: {val_running_loss:.5f} | Avg Val Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}")
 
-    if epoch % 2 == 0 and save_model:
+    if loss < best_loss:
         torch.save(model.state_dict(), f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}.pt")
+        best_loss = loss
