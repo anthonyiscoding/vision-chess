@@ -4,6 +4,7 @@ import numpy as np
 from torch.utils.data import Dataset
 from chessgpt.model import tokenizer, config
 from chess import pgn
+from typing import Literal
 
 
 class PGNDataset(Dataset):
@@ -42,13 +43,15 @@ class PGNDataset(Dataset):
     def __getitem__(self, index):
         return self.input_ids[index], self.target_ids[index]
 
-
+GameStage = Literal["full", "early", "mid", "late"]
 class NpyDataset(Dataset):
     def __init__(
         self,
         files: list[str],
         device,
         max_seq_len=config.max_seq_len,
+        stage: GameStage = "full",
+        random_length = False
         # step=1,
     ):
         super().__init__()
@@ -62,24 +65,42 @@ class NpyDataset(Dataset):
         for f in files:
             games: np.ndarray = np.load(f, mmap_mode="r")
             sample_count = len(games)
+            game_start = 0
+
+            # TODO: Double check that the math is mathing
             for i in range(0, sample_count):
-                # Randomly limit game length so we get games at every position
-                game_length = min(len(games[i]), self.max_seq_len)
-                game_length = random.randint(1, game_length)
-                self.samples.append((f, i, game_length))
+                game = games[i]
+                game_end = min(len(game), self.max_seq_len)
+                match stage:
+                    case "early":
+                        game_start = 0
+                        game_end = 15
+                    case "mid":
+                        game_start = 16
+                        game_end = 31 
+                    case "late":
+                        game_start = 32
+                        game_end = 47
+
+                if random_length:
+                    if len(game) < 5: continue
+                    # Randomly limit game length so we get games at every position
+                    game_end = random.randint(game_start + 2, game_end)
+                    
+                self.samples.append((f, i, game_start, game_end))
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, index):
-        file_path, i, game_length = self.samples[index]
+        file_path, i, game_start, game_end = self.samples[index]
         games = np.load(file_path, mmap_mode="r")
         game = games[i]
 
         token_ids = tokenizer.encode_array(game)
 
-        input_ids = torch.tensor(token_ids[:game_length], device=self.device)
-        target_ids = torch.tensor(token_ids[1 : game_length + 1], device=self.device)
+        input_ids = torch.tensor(token_ids[game_start:game_end - 1], device=self.device)
+        target_ids = torch.tensor(token_ids[game_start + 1 : game_end], device=self.device)
 
         # TODO: Compare lengths properly (.shape?)
         # if len(input_ids) != len(target_ids):
