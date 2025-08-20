@@ -1,5 +1,9 @@
+<img src="./extra/vision-logo.png" alt="Vision Chess Logo" width=300 style="display:block; margin: auto; width: 50%"></img>
+
 # About
 Vision is a small in-progress model designed to predict the next move in a chess game using GPT-like transformers.
+
+It's a hobby project trying to answer the question "Can an autoregressive language model play chess if trained on the right data in the right way?"
 
 # Installation
 Installation can be done with poetry:
