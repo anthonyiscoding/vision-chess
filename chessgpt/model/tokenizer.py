@@ -1,39 +1,51 @@
 from chess.pgn import Game
 
+
+def _flip(dictionary: dict):
+
+   flipped = {}
+   for k, v in dictionary.items():
+       if v not in dictionary:
+           flipped[v] = k  
+    
+   return flipped
+
+special_tokens_to_embeddings = {
+    "<|startofgame|>": 4096,
+    "<|endofgame|>": 4097,
+    "<|unk|>": 4098,
+    "<|pad|>": 4099,
+}
+
+special_embeddings_to_tokens = _flip(special_tokens_to_embeddings)
+
 # Naive implementation, encodes strings like "a1a1" which aren't valid moves.
 # TODO: Improve move detection
 def to_embedding(move: str):
-    if move == '<|startofgame|>':
-        return 4097
 
-    if move == '<|endofgame|>':
-        return 4098 
-
-    if move == 'None' or move == None or move == 'nan':
-        return 0
+    if move in special_tokens_to_embeddings.keys():
+        return special_tokens_to_embeddings[move]
 
     assert len(move) == 4, "Move must be a string of length 4"
-    files = ["a", "b", "c", "d", "e", "f", "g", "h"]
-    ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
 
-    file_start = files.index(move[0])
-    rank_start = ranks.index(move[1])
-    file_end = files.index(move[2])
-    rank_end = ranks.index(move[3])
+    try:
+        files = ["a", "b", "c", "d", "e", "f", "g", "h"]
+        ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
 
-    return file_start + 8 * rank_start + 64 * file_end + 512 * rank_end + 1
+        file_start = files.index(move[0])
+        rank_start = ranks.index(move[1])
+        file_end = files.index(move[2])
+        rank_end = ranks.index(move[3])
+
+        return file_start + 8 * rank_start + 64 * file_end + 512 * rank_end
+    except:
+        return special_tokens_to_embeddings['<|unk|>']
+
 
 def from_embedding(embedding: int) -> str:
-    if embedding == 4097:
-        return '<|startofgame|>'
-    
-    if embedding == 4098:
-        return '<|endofgame|>'
-    
-    assert embedding != 0, "Embeddings should not contain 0. 0 should have been masked out in earlier steps."
 
-    # Lookup is still zero indexed even though we won't encode embedding == 0. 
-    embedding -= 1
+    if embedding in special_embeddings_to_tokens.keys():
+        return special_embeddings_to_tokens[embedding]
 
     files = ["a", "b", "c", "d", "e", "f", "g", "h"]
     ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
@@ -48,6 +60,7 @@ def from_embedding(embedding: int) -> str:
 
     return files[file_start] + ranks[rank_start] + files[file_end] + ranks[rank_end]
 
+
 def encode_game(game: Game):
     token_ids = []
     for m in game.mainline_moves():
@@ -57,17 +70,20 @@ def encode_game(game: Game):
 
     return token_ids
 
+
 def encode_array(move_list):
     token_ids = [to_embedding(m[:4]) for m in move_list]
     return token_ids
+
 
 def decode(token_ids: list[int]):
     decoded_ids = []
 
     for t in token_ids:
         decoded_ids.append(t)
-    
+
     return decoded_ids
+
 
 def generate_all_possible_moves():
     files = ["a", "b", "c", "d", "e", "f", "g", "h"]
@@ -81,6 +97,8 @@ def generate_all_possible_moves():
                 for r_ in ranks:
                     move = f"{f}{r}{f_}{r_}"
                     moves.append(move)
+
+    for k in special_tokens_to_embeddings.keys():
+        moves.append(k)
     
-    moves.append('<|startofgame|>')
     return moves

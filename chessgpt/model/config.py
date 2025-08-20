@@ -2,7 +2,8 @@ from chessgpt.model.tokenizer import generate_all_possible_moves
 
 # Small FF network for testing
 emb_dim = 1024
-batch_size = emb_dim / 64 # RAM constraints on my machine, ~36GB RAM
+batch_size = 4
+# batch_size = emb_dim / 64 # RAM constraints on my machine, ~36GB RAM
 vocabulary_size = len(generate_all_possible_moves())
 num_epochs = 8
 # out_dim = 128

@@ -4,10 +4,10 @@ from torch.utils.data import DataLoader
 from chessgpt.model import transformer as t
 from chessgpt.model.data import NpyDataset
 from chessgpt.pgn_to_npy import list_npy_files
+from chessgpt.model.tokenizer import special_tokens_to_embeddings
 from datetime import datetime
 from torch.nn.utils.rnn import pad_sequence
 
-save_model = True
 device = torch.device("mps")
 
 training_files = list_npy_files("data/training")
@@ -18,8 +18,8 @@ validation_dataset = NpyDataset(validation_files, device)
 
 def collate_fn(batch):
     input_ids, target_ids = zip(*batch)
-    input_ids = pad_sequence(input_ids, batch_first=True, padding_value=0)
-    target_ids = pad_sequence(target_ids, batch_first=True, padding_value=0)
+    input_ids = pad_sequence(input_ids, batch_first=True, padding_value=special_tokens_to_embeddings['<|pad|>'])
+    target_ids = pad_sequence(target_ids, batch_first=True, padding_value=special_tokens_to_embeddings['<|pad|>'])
     return input_ids, target_ids
 
 # TODO: Adjust code to allow for workers outside the main thread (num_workers > 0)
