@@ -43,7 +43,10 @@ class PGNDataset(Dataset):
     def __getitem__(self, index):
         return self.input_ids[index], self.target_ids[index]
 
+
 GameStage = Literal["full", "early", "mid", "late"]
+
+
 class NpyDataset(Dataset):
 
     def __init__(
@@ -51,7 +54,7 @@ class NpyDataset(Dataset):
         files: list[str],
         max_seq_len=config.max_seq_len,
         stage: GameStage = "full",
-        random_length = False
+        random_length=False,
     ):
         super().__init__()
 
@@ -74,13 +77,14 @@ class NpyDataset(Dataset):
                         game_end = 15
                     case "mid":
                         game_start = 16
-                        game_end = 31 
+                        game_end = 31
                     case "late":
                         game_start = 32
                         game_end = 47
 
                 if random_length:
-                    if len(game) < 5: continue
+                    if len(game) < 5:
+                        continue
                     # Randomly limit game length so we get games at every position
                     game_end = random.randint(game_start + 2, game_end)
                 self.samples.append((f, i, game_start, game_end))
@@ -99,7 +103,7 @@ class NpyDataset(Dataset):
         # if token_ids.index(tokenizer.special_tokens_to_embeddings['<|unk|>']):
         #     return torch.tensor([], device="cpu"), torch.tensor([], device="cpu")
 
-        input_ids = torch.tensor(token_ids[game_start:game_end - 1], device="cpu")
+        input_ids = torch.tensor(token_ids[game_start : game_end - 1], device="cpu")
         target_ids = torch.tensor(token_ids[game_start + 1 : game_end], device="cpu")
 
         return input_ids, target_ids

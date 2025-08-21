@@ -3,12 +3,13 @@ from chess.pgn import Game
 
 def _flip(dictionary: dict):
 
-   flipped = {}
-   for k, v in dictionary.items():
-       if v not in dictionary:
-           flipped[v] = k  
-    
-   return flipped
+    flipped = {}
+    for k, v in dictionary.items():
+        if v not in dictionary:
+            flipped[v] = k
+
+    return flipped
+
 
 special_tokens_to_embeddings = {
     "<|startofgame|>": 4096,
@@ -18,6 +19,7 @@ special_tokens_to_embeddings = {
 }
 
 special_embeddings_to_tokens = _flip(special_tokens_to_embeddings)
+
 
 # Naive implementation, encodes strings like "a1a1" which aren't valid moves.
 # TODO: Improve move detection
@@ -37,7 +39,7 @@ def to_embedding(move: str):
 
         return file_start + 8 * rank_start + 64 * file_end + 512 * rank_end
     except:
-        return special_tokens_to_embeddings['<|unk|>']
+        return special_tokens_to_embeddings["<|unk|>"]
 
 
 def from_embedding(embedding: int) -> str:
@@ -98,5 +100,5 @@ def generate_all_possible_moves():
 
     for k in special_tokens_to_embeddings.keys():
         moves.append(k)
-    
+
     return moves

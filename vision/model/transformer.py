@@ -37,7 +37,9 @@ mha = MultiHeadAttention(
 class ChessModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.token_embedding = nn.Embedding(config.vocabulary_size, config.emb_dim, padding_idx=0)
+        self.token_embedding = nn.Embedding(
+            config.vocabulary_size, config.emb_dim, padding_idx=0
+        )
         self.positional_embedding = nn.Embedding(config.max_seq_len, config.emb_dim)
         self.transformer_blocks = nn.Sequential(
             *[

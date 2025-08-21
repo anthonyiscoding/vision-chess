@@ -18,8 +18,8 @@ def read_pgn(file: str):
                 yield moves
             except:
                 continue
-    
-    return None # TODO: Should probably raise StopIteration
+
+    return None  # TODO: Should probably raise StopIteration
 
 
 def write_np(
