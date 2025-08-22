@@ -25,16 +25,18 @@ def train(
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
     logger.info(
-        f"Training on approximately {len(training_dataset) // config.batch_size} batches."
+        "Training on approximately %d batches.",
+        len(training_dataset) // config.batch_size,
     )
     logger.info(
-        f"Validating on approximately {len(validation_dataset) // config.batch_size} batches."
+        "Validating on approximately %d batches.",
+        len(validation_dataset) // config.batch_size,
     )
-    logger.info(f"Batch size: {config.batch_size}")
+    logger.info("Batch size: %d", config.batch_size)
 
     best_loss = torch.inf
     for epoch in range(config.num_epochs):
-        logger.info(f"Starting epoch {epoch}")
+        logger.info("Starting epoch %d", epoch)
         model.train()
         total_loss = 0.0
         total_tokens = 0
@@ -52,7 +54,10 @@ def train(
             mask = target != special_tokens_to_embeddings["<|pad|>"]
             if mask.shape[0] != output.shape[0]:
                 logger.warning(
-                    f"Skipping training batch {i} due to shape mismatch: mask {mask.shape}, output {output.shape}"
+                    "Skipping training batch %d due to shape mismatch: mask %s, output %s",
+                    i,
+                    mask.shape,
+                    output.shape,
                 )
                 continue
             if mask.any():
@@ -64,9 +69,15 @@ def train(
                 running_loss = (
                     total_loss / total_tokens if total_tokens > 0 else float("inf")
                 )
+                running_perplexity = torch.exp(torch.tensor(running_loss))
                 if i % 10 == 0:
                     logger.info(
-                        f"Training Epoch: {epoch} | Batch: {i} | Sample input: {input[0][:2]} | Running Loss: {running_loss:.5f} | Running Perplexity: {torch.exp(torch.tensor(running_loss)):.5f}"
+                        "Training Epoch: %d | Batch: %d | Sample input: %s | Running Loss: %.5f | Running Perplexity: %.5f",
+                        epoch,
+                        i,
+                        input[0][:2],
+                        running_loss,
+                        running_perplexity,
                     )
         # scheduler.step()
 
@@ -81,7 +92,10 @@ def train(
                 val_mask = val_target != special_tokens_to_embeddings["<|pad|>"]
                 if val_mask.shape[0] != val_output.shape[0]:
                     logger.warning(
-                        f"Skipping validation batch {v_i} due to shape mismatch: mask {val_mask.shape}, output {val_output.shape}"
+                        "Skipping validation batch %d due to shape mismatch: mask %s, output %s",
+                        v_i,
+                        val_mask.shape,
+                        val_output.shape,
                     )
                     continue
                 if val_mask.any():
@@ -93,19 +107,33 @@ def train(
                         if val_total_tokens > 0
                         else float("inf")
                     )
+                    val_running_perplexity = torch.exp(torch.tensor(val_running_loss))
                     if v_i % 10 == 0:
                         logger.info(
-                            f"Validating Epoch: {epoch} | Batch: {v_i} | Sample input: {val_input[0][:2]} | Running Loss: {val_running_loss:.5f} | Running Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}"
+                            "Validating Epoch: %d | Batch: %d | Sample input: %s | Running Loss: %.5f | Running Perplexity: %.5f",
+                            epoch,
+                            v_i,
+                            val_input[0][:2],
+                            val_running_loss,
+                            val_running_perplexity,
                         )
 
         train_perplexity = torch.exp(torch.tensor(running_loss))
         logger.info(
-            f"Epoch {epoch}: Avg Loss = {running_loss:.5f} | Avg Perplexity: {train_perplexity:.5f} | Avg Val Loss: {val_running_loss:.5f} | Avg Val Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}"
+            "Epoch %d: Avg Loss = %.5f | Avg Perplexity: %.5f | Avg Val Loss: %.5f | Avg Val Perplexity: %.5f",
+            epoch,
+            running_loss,
+            train_perplexity,
+            val_running_loss,
+            val_running_perplexity,
         )
 
         if running_loss < best_loss:
             logger.info(
-                f"Saving model. Model had less loss than last epoch {running_loss} < {best_loss} | Perplexity: {train_perplexity}"
+                "Saving model. Model had less loss than last epoch %.5f < %.5f | Perplexity: %.5f",
+                running_loss,
+                best_loss,
+                float(train_perplexity),
             )
             torch.save(
                 model.state_dict(),
