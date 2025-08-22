@@ -1,3 +1,5 @@
+import logging
+import sys
 from multiprocessing import freeze_support
 import torch
 import vision.model.config as config
@@ -8,6 +10,18 @@ from vision.pgn_to_npy import list_npy_files
 from vision.model.tokenizer import special_tokens_to_embeddings
 from datetime import datetime
 from torch.nn.utils.rnn import pad_sequence
+
+
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stdout,
+        force=True,
+    )
+
+
+logger = logging.getLogger(__name__)
 
 
 def collate_fn(batch):
@@ -51,6 +65,24 @@ def main():
     )
 
     model = t.ChessModel()
+    train(
+        model=model,
+        device=device,
+        training_dataset=training_dataset,
+        validation_dataset=validation_dataset,
+        training_dataloader=training_dataloader,
+        validation_dataloader=validation_dataloader,
+    )
+
+
+def train(
+    model,
+    device,
+    training_dataset,
+    validation_dataset,
+    training_dataloader,
+    validation_dataloader,
+):
     model.to(device)
     model.train()
 
@@ -59,17 +91,17 @@ def main():
     # TODO: Disabling the scheduler temporarily during testing
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
-    print(
+    logger.info(
         f"Training on approximately {len(training_dataset) // config.batch_size} batches."
     )
-    print(
+    logger.info(
         f"Validating on approximately {len(validation_dataset) // config.batch_size} batches."
     )
-    print(f"Batch size: {config.batch_size}")
+    logger.info(f"Batch size: {config.batch_size}")
 
     best_loss = torch.inf
     for epoch in range(config.num_epochs):
-        print(f"--- Epoch {epoch} ---")
+        logger.info(f"Starting epoch {epoch}")
         model.train()
         total_loss = 0.0
         total_tokens = 0
@@ -86,7 +118,7 @@ def main():
 
             mask = target != special_tokens_to_embeddings["<|pad|>"]
             if mask.shape[0] != output.shape[0]:
-                print(
+                logger.warning(
                     f"Skipping training batch {i} due to shape mismatch: mask {mask.shape}, output {output.shape}"
                 )
                 continue
@@ -100,7 +132,7 @@ def main():
                     total_loss / total_tokens if total_tokens > 0 else float("inf")
                 )
                 if i % 10 == 0:
-                    print(
+                    logger.info(
                         f"Training Epoch: {epoch} | Batch: {i} | Sample input: {input[0][:2]} | Running Loss: {running_loss:.5f} | Running Perplexity: {torch.exp(torch.tensor(running_loss)):.5f}"
                     )
         # scheduler.step()
@@ -115,7 +147,7 @@ def main():
                 val_target = val_target.view(-1)
                 val_mask = val_target != special_tokens_to_embeddings["<|pad|>"]
                 if val_mask.shape[0] != val_output.shape[0]:
-                    print(
+                    logger.warning(
                         f"Skipping validation batch {v_i} due to shape mismatch: mask {val_mask.shape}, output {val_output.shape}"
                     )
                     continue
@@ -129,17 +161,17 @@ def main():
                         else float("inf")
                     )
                     if v_i % 10 == 0:
-                        print(
+                        logger.info(
                             f"Validating Epoch: {epoch} | Batch: {v_i} | Sample input: {val_input[0][:2]} | Running Loss: {val_running_loss:.5f} | Running Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}"
                         )
 
         train_perplexity = torch.exp(torch.tensor(running_loss))
-        print(
+        logger.info(
             f"Epoch {epoch}: Avg Loss = {running_loss:.5f} | Avg Perplexity: {train_perplexity:.5f} | Avg Val Loss: {val_running_loss:.5f} | Avg Val Perplexity: {torch.exp(torch.tensor(val_running_loss)):.5f}"
         )
 
         if running_loss < best_loss:
-            print(
+            logger.info(
                 f"Saving model. Model had less loss than last epoch {running_loss} < {best_loss} | Perplexity: {train_perplexity}"
             )
             torch.save(
@@ -150,5 +182,6 @@ def main():
 
 
 if __name__ == "__main__":
+    setup_logging()
     freeze_support()
     main()
