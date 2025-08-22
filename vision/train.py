@@ -38,111 +38,131 @@ def train(
     best_loss = torch.inf
     for epoch in range(config.num_epochs):
         logger.info("Starting epoch %d", epoch)
-        model.train()
-        total_loss = 0.0
-        total_tokens = 0
-        val_total_loss = 0.0
-        val_total_tokens = 0
-        for i, (input, target) in enumerate(training_dataloader):
-            input = input.to(device)
-            target = target.to(device)
-            optimizer.zero_grad()
-            output = model(input)
-            output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
-            target = target.view(-1)  # (batch*seq_len,)
+        running_loss, running_perplexity = _training_loop(
+            model, device, training_dataloader, config, loss_fn, optimizer, epoch
+        )
 
-            mask = target != special_tokens_to_embeddings["<|pad|>"]
-            if mask.shape[0] != output.shape[0]:
-                logger.warning(
-                    "Skipping training batch %d due to shape mismatch: mask %s, output %s",
-                    i,
-                    mask.shape,
-                    output.shape,
-                )
-                continue
-            if mask.any():
-                loss = loss_fn(output[mask], target[mask])
-                loss.backward()
-                optimizer.step()
-                total_loss += loss.item() * mask.sum().item()
-                total_tokens += mask.sum().item()
-                running_loss = (
-                    total_loss / total_tokens if total_tokens > 0 else float("inf")
-                )
-                running_perplexity = torch.exp(torch.tensor(running_loss))
-                if i % 10 == 0:
-                    logger.info(
-                        "Training Epoch: %d | Batch: %d | Sample input: %s | Running Loss: %.5f | Running Perplexity: %.5f",
-                        epoch,
-                        i,
-                        input[0][:2],
-                        running_loss,
-                        running_perplexity,
-                    )
-            # scheduler.step()
+        val_running_loss, val_running_perplexity = _validation_loop(
+            model, device, validation_dataloader, config, loss_fn, epoch
+        )
 
-            # TODO: Better batch limiting
-            if config.batch_limit and i + 1 > config.batch_limit:
-                break
-
-        model.eval()
-        for v_i, (val_input, val_target) in enumerate(validation_dataloader):
-            val_input = val_input.to(device)
-            val_target = val_target.to(device)
-            with torch.no_grad():
-                val_output = model(val_input)
-                val_output = val_output.view(-1, val_output.size(-1))
-                val_target = val_target.view(-1)
-                val_mask = val_target != special_tokens_to_embeddings["<|pad|>"]
-                if val_mask.shape[0] != val_output.shape[0]:
-                    logger.warning(
-                        "Skipping validation batch %d due to shape mismatch: mask %s, output %s",
-                        v_i,
-                        val_mask.shape,
-                        val_output.shape,
-                    )
-                    continue
-                if val_mask.any():
-                    val_loss = loss_fn(val_output[val_mask], val_target[val_mask])
-                    val_total_loss += val_loss.item() * val_mask.sum().item()
-                    val_total_tokens += val_mask.sum().item()
-                    val_running_loss = (
-                        val_total_loss / val_total_tokens
-                        if val_total_tokens > 0
-                        else float("inf")
-                    )
-                    val_running_perplexity = torch.exp(torch.tensor(val_running_loss))
-                    if v_i % 10 == 0:
-                        logger.info(
-                            "Validating Epoch: %d | Batch: %d | Sample input: %s | Running Loss: %.5f | Running Perplexity: %.5f",
-                            epoch,
-                            v_i,
-                            val_input[0][:2],
-                            val_running_loss,
-                            val_running_perplexity,
-                        )
-
-            if config.batch_limit and v_i + 1 > config.batch_limit:
-                break
-        train_perplexity = torch.exp(torch.tensor(running_loss))
         logger.info(
             "Epoch %d: Avg Loss = %.5f | Avg Perplexity: %.5f | Avg Val Loss: %.5f | Avg Val Perplexity: %.5f",
             epoch,
             running_loss,
-            train_perplexity,
+            running_perplexity,
             val_running_loss,
             val_running_perplexity,
         )
 
         if config.save_model and running_loss < best_loss:
-            logger.info(
-                "Saving model. Model had less loss than last epoch %.5f < %.5f | Perplexity: %.5f",
-                running_loss,
-                best_loss,
-                float(train_perplexity),
-            )
-            torch.save(
-                model.state_dict(),
-                f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}-perplexity-{train_perplexity:.3f}.pt",
-            )
+            _save_model(model, best_loss, epoch, running_loss, running_perplexity)
             best_loss = running_loss
+
+
+def _training_loop(
+    model, device, training_dataloader, config, loss_fn, optimizer, epoch
+):
+    model.train()
+    total_loss = 0.0
+    total_tokens = 0
+    for i, (input, target) in enumerate(training_dataloader):
+        input = input.to(device)
+        target = target.to(device)
+        optimizer.zero_grad()
+        output = model(input)
+        output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
+        target = target.view(-1)  # (batch*seq_len,)
+
+        mask = target != special_tokens_to_embeddings["<|pad|>"]
+        if mask.shape[0] != output.shape[0]:
+            logger.warning(
+                "Skipping training batch %d due to shape mismatch: mask %s, output %s",
+                i,
+                mask.shape,
+                output.shape,
+            )
+            continue
+        if mask.any():
+            loss = loss_fn(output[mask], target[mask])
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item() * mask.sum().item()
+            total_tokens += mask.sum().item()
+            running_loss = (
+                total_loss / total_tokens if total_tokens > 0 else float("inf")
+            )
+            running_perplexity = torch.exp(torch.tensor(running_loss))
+            if i % 10 == 0:
+                logger.info(
+                    "Training Epoch: %d | Batch: %d | Sample input: %s | Running Loss: %.5f | Running Perplexity: %.5f",
+                    epoch,
+                    i,
+                    input[0][:2],
+                    running_loss,
+                    running_perplexity,
+                )
+            # scheduler.step()
+
+            # TODO: Better batch limiting
+        if config.batch_limit and i + 1 > config.batch_limit:
+            break
+    return running_loss, running_perplexity
+
+
+def _validation_loop(model, device, validation_dataloader, config, loss_fn, epoch):
+    model.eval()
+    val_total_loss = 0.0
+    val_total_tokens = 0
+    for v_i, (val_input, val_target) in enumerate(validation_dataloader):
+        val_input = val_input.to(device)
+        val_target = val_target.to(device)
+        with torch.no_grad():
+            val_output = model(val_input)
+            val_output = val_output.view(-1, val_output.size(-1))
+            val_target = val_target.view(-1)
+            val_mask = val_target != special_tokens_to_embeddings["<|pad|>"]
+            if val_mask.shape[0] != val_output.shape[0]:
+                logger.warning(
+                    "Skipping validation batch %d due to shape mismatch: mask %s, output %s",
+                    v_i,
+                    val_mask.shape,
+                    val_output.shape,
+                )
+                continue
+            if val_mask.any():
+                val_loss = loss_fn(val_output[val_mask], val_target[val_mask])
+                val_total_loss += val_loss.item() * val_mask.sum().item()
+                val_total_tokens += val_mask.sum().item()
+                val_running_loss = (
+                    val_total_loss / val_total_tokens
+                    if val_total_tokens > 0
+                    else float("inf")
+                )
+                val_running_perplexity = torch.exp(torch.tensor(val_running_loss))
+                if v_i % 10 == 0:
+                    logger.info(
+                        "Validating Epoch: %d | Batch: %d | Sample input: %s | Running Loss: %.5f | Running Perplexity: %.5f",
+                        epoch,
+                        v_i,
+                        val_input[0][:2],
+                        val_running_loss,
+                        val_running_perplexity,
+                    )
+
+        if config.batch_limit and v_i + 1 > config.batch_limit:
+            break
+    return val_running_loss, val_running_perplexity
+
+
+def _save_model(model, best_loss, epoch, running_loss, running_perplexity):
+    logger.info(
+        "Saving model. Model had less loss than last epoch %.5f < %.5f | Perplexity: %.5f",
+        running_loss,
+        best_loss,
+        running_perplexity,
+    )
+    torch.save(
+        model.state_dict(),
+        f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}-perplexity-{running_perplexity:.3f}.pt",
+    )
