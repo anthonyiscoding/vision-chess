@@ -1,8 +1,8 @@
+import argparse
 import logging
 import sys
 from multiprocessing import freeze_support
 import torch
-import vision.model.config as config
 from torch.utils.data import DataLoader
 from vision.model import transformer as t
 from vision.model.data import NpyDataset
@@ -39,7 +39,7 @@ def collate_fn(batch):
     return input_ids, target_ids
 
 
-def main():
+def main(config):
     device = torch.device("mps")
 
     training_files = list_npy_files("data/training")
@@ -64,7 +64,7 @@ def main():
         num_workers=2,
     )
 
-    model = t.ChessModel()
+    model = t.ChessModel(config)
     train(
         model=model,
         device=device,
@@ -72,10 +72,20 @@ def main():
         validation_dataset=validation_dataset,
         training_dataloader=training_dataloader,
         validation_dataloader=validation_dataloader,
+        config=config,
     )
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Train a GPT-like model to play Chess")
+    parser.add_argument("--test", default=False, action="store_true")
+    args = parser.parse_args()
+
+    if args.test:
+        import vision.model.config.test as config
+    else:
+        import vision.model.config.default as config
+
     setup_logging()
     freeze_support()
-    main()
+    main(config=config)

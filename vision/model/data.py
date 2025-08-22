@@ -2,14 +2,14 @@ import torch
 import random
 import numpy as np
 from torch.utils.data import Dataset
-from vision.model import tokenizer, config
+from vision.model import tokenizer
 from chess import pgn
 from typing import Literal
 
 
 class PGNDataset(Dataset):
     def __init__(
-        self, path, device, max_seq_len=config.max_seq_len, max_games=None, step=2
+        self, path, device, max_seq_len: int | None = None, max_games=None, step=2
     ):
         super().__init__()
 
@@ -52,7 +52,7 @@ class NpyDataset(Dataset):
     def __init__(
         self,
         files: list[str],
-        max_seq_len=config.max_seq_len,
+        max_seq_len: int | None = None,
         stage: GameStage = "full",
         random_length=False,
     ):
@@ -70,7 +70,10 @@ class NpyDataset(Dataset):
             # TODO: Double check that the math is mathing
             for i in range(0, sample_count):
                 game = games[i]
-                game_end = min(len(game), self.max_seq_len)
+                if self.max_seq_len:
+                    game_end = min(len(game), self.max_seq_len)
+                else:
+                    game_end = len(game)
                 match stage:
                     case "early":
                         game_start = 0

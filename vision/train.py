@@ -1,7 +1,7 @@
 import logging
 import torch
 from datetime import datetime
-import vision.model.config as config
+import vision.model.config
 from vision.model.tokenizer import special_tokens_to_embeddings
 
 
@@ -15,6 +15,7 @@ def train(
     validation_dataset,
     training_dataloader,
     validation_dataloader,
+    config=vision.model.config,
 ):
     model.to(device)
     model.train()
@@ -45,7 +46,6 @@ def train(
         for i, (input, target) in enumerate(training_dataloader):
             input = input.to(device)
             target = target.to(device)
-
             optimizer.zero_grad()
             output = model(input)
             output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
@@ -79,7 +79,11 @@ def train(
                         running_loss,
                         running_perplexity,
                     )
-        # scheduler.step()
+            # scheduler.step()
+
+            # TODO: Better batch limiting
+            if config.batch_limit and i + 1 > config.batch_limit:
+                break
 
         model.eval()
         for v_i, (val_input, val_target) in enumerate(validation_dataloader):
@@ -118,6 +122,8 @@ def train(
                             val_running_perplexity,
                         )
 
+            if config.batch_limit and v_i + 1 > config.batch_limit:
+                break
         train_perplexity = torch.exp(torch.tensor(running_loss))
         logger.info(
             "Epoch %d: Avg Loss = %.5f | Avg Perplexity: %.5f | Avg Val Loss: %.5f | Avg Val Perplexity: %.5f",
@@ -128,7 +134,7 @@ def train(
             val_running_perplexity,
         )
 
-        if running_loss < best_loss:
+        if config.save_model and running_loss < best_loss:
             logger.info(
                 "Saving model. Model had less loss than last epoch %.5f < %.5f | Perplexity: %.5f",
                 running_loss,
