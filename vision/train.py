@@ -25,13 +25,22 @@ def train(
     # TODO: Disabling the scheduler temporarily during testing
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
+    training_batch_count = len(training_dataset) // config.batch_size
+    validation_batch_count = len(validation_dataset) // config.batch_size
+
+    # It's probably better to have validation be the same batch limit for testing
+    # TODO: But only for testing and small training sizes, otherwise it's unnecessary
+    if config.batch_limit:
+        training_batch_count = config.batch_limit
+        validation_batch_count = config.batch_limit
+
     logger.info(
         "Training on approximately %d batches.",
-        len(training_dataset) // config.batch_size,
+        training_batch_count,
     )
     logger.info(
         "Validating on approximately %d batches.",
-        len(validation_dataset) // config.batch_size,
+        validation_batch_count,
     )
     logger.info("Batch size: %d", config.batch_size)
 
