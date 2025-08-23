@@ -29,3 +29,4 @@ attn_dropout = 0.0
 transformer_layers = 6
 batch_limit = None
 save_model = True
+learning_rate = 1e-3

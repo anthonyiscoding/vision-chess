@@ -1,6 +1,5 @@
 from vision.model.tokenizer import generate_all_possible_moves
 
-# Small FF network for testing
 emb_dim = 64
 batch_size = 1
 vocabulary_size = len(generate_all_possible_moves())
