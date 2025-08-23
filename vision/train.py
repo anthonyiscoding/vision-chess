@@ -3,6 +3,7 @@ import torch
 from datetime import datetime
 import vision.model.config
 from vision.model.tokenizer import special_tokens_to_embeddings
+import optuna.exceptions
 
 
 logger = logging.getLogger(__name__)
@@ -16,12 +17,13 @@ def train(
     training_dataloader,
     validation_dataloader,
     config=vision.model.config,
+    trial=None,
 ):
     model.to(device)
     model.train()
 
     loss_fn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
     # TODO: Disabling the scheduler temporarily during testing
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
@@ -51,8 +53,8 @@ def train(
             model, device, training_dataloader, config, loss_fn, optimizer, epoch
         )
 
-        val_running_loss, val_running_perplexity = _validation_loop(
-            model, device, validation_dataloader, config, loss_fn, epoch
+        val_running_loss, val_running_perplexity, accuracy = _validation_loop(
+            model, device, validation_dataloader, config, loss_fn, epoch, trial=trial
         )
 
         logger.info(
@@ -67,6 +69,8 @@ def train(
         if config.save_model and running_loss < best_loss:
             _save_model(model, best_loss, epoch, running_loss, running_perplexity)
             best_loss = running_loss
+
+    return accuracy
 
 
 def _training_loop(
@@ -119,10 +123,14 @@ def _training_loop(
     return running_loss, running_perplexity
 
 
-def _validation_loop(model, device, validation_dataloader, config, loss_fn, epoch):
+def _validation_loop(
+    model, device, validation_dataloader, config, loss_fn, epoch, trial=None
+):
     model.eval()
     val_total_loss = 0.0
     val_total_tokens = 0
+    correct = 0
+    accuracy = None  # Only used in trials
     for v_i, (val_input, val_target) in enumerate(validation_dataloader):
         val_input = val_input.to(device)
         val_target = val_target.to(device)
@@ -130,6 +138,9 @@ def _validation_loop(model, device, validation_dataloader, config, loss_fn, epoc
             val_output = model(val_input)
             val_output = val_output.view(-1, val_output.size(-1))
             val_target = val_target.view(-1)
+            if trial:
+                pred = val_output.argmax(dim=1, keepdim=True)
+                correct += pred.eq(val_target.view_as(pred)).sum().item()
             val_mask = val_target != special_tokens_to_embeddings["<|pad|>"]
             if val_mask.shape[0] != val_output.shape[0]:
                 logger.warning(
@@ -161,7 +172,17 @@ def _validation_loop(model, device, validation_dataloader, config, loss_fn, epoc
 
         if config.batch_limit and v_i + 1 > config.batch_limit:
             break
-    return val_running_loss, val_running_perplexity
+    if trial:
+        accuracy = correct / min(
+            len(validation_dataloader.dataset), config.batch_limit * config.batch_size
+        )
+        trial.report(accuracy, epoch)
+
+        # Handle pruning based on the intermediate value.
+        if trial.should_prune():
+            raise optuna.exceptions.TrialPruned()
+
+    return val_running_loss, val_running_perplexity, accuracy
 
 
 def _save_model(model, best_loss, epoch, running_loss, running_perplexity):
