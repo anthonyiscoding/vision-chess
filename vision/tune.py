@@ -13,11 +13,12 @@ from vision.main import collate_fn
 # TODO: The way config currently works should be improved
 def define_model(trial: ot.Trial):
     config.transformer_layers = trial.suggest_int("transformer_layers", 2, 8)
-    config.batch_size = trial.suggest_int("batch_size", 1, 8, step=2)
+    config.batch_size = trial.suggest_int("batch_size", 1, 7, step=2)
     config.emb_dim = trial.suggest_categorical(
         "emb_dim", [128, 256, 512, 768, 1024, 2048]
     )
     config.hidden_dim = config.emb_dim * 2
+    config.head_dim = config.emb_dim // config.num_heads
     config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
     config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1, log=True)
 
@@ -65,7 +66,7 @@ def objective(trial: ot.Trial):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=10, timeout=600)
+    study.optimize(objective, n_trials=1, timeout=600)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.COMPLETE])
