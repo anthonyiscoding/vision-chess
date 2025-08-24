@@ -13,11 +13,9 @@ from vision.main import collate_fn, setup_logging
 
 # TODO: The way config currently works should be improved
 def define_model(trial: ot.Trial):
-    config.transformer_layers = trial.suggest_int("transformer_layers", 2, 8)
-    config.batch_size = trial.suggest_int("batch_size", 1, 7, step=2)
-    config.emb_dim = trial.suggest_categorical(
-        "emb_dim", [128, 256, 512, 768, 1024, 2048]
-    )
+    # config.transformer_layers = trial.suggest_int("transformer_layers", 2, 8)
+    config.batch_size = trial.suggest_int("batch_size", 2, 32, step=2)
+    config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048])
     config.hidden_dim = config.emb_dim * 2
     config.head_dim = config.emb_dim // config.num_heads
     config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
@@ -60,6 +58,7 @@ def objective(trial: ot.Trial):
         training_dataloader=training_dataloader,
         validation_dataloader=validation_dataloader,
         config=config,
+        trial=trial,
     )
 
     return accuracy
@@ -69,7 +68,7 @@ if __name__ == "__main__":
     setup_logging()
     freeze_support()
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=1, timeout=600)
+    study.optimize(objective, n_trials=10, timeout=600)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.COMPLETE])
