@@ -1,13 +1,14 @@
+from multiprocessing import freeze_support
 import optuna
 import optuna.trial as ot
 import torch
 from torch.utils.data import DataLoader
-import vision.model.config.default as config
+import vision.model.config.tune as config
 from vision.model.transformer import ChessModel
 from vision.model.data import NpyDataset
 from pgn_to_npy import list_npy_files
 from vision.train import train
-from vision.main import collate_fn
+from vision.main import collate_fn, setup_logging
 
 
 # TODO: The way config currently works should be improved
@@ -65,6 +66,8 @@ def objective(trial: ot.Trial):
 
 
 if __name__ == "__main__":
+    setup_logging()
+    freeze_support()
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=1, timeout=600)
 
