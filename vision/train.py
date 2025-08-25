@@ -196,7 +196,7 @@ def _save_model(model, best_loss, epoch, config, running_loss, running_perplexit
         best_loss,
         running_perplexity,
     )
-    model_name = f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}-perplexity-{running_perplexity:.3f}"
+    model_name = f"models/model-{datetime.now():%Y-%m-%d-%H-%M-%S}-epoch-{epoch}-perplexity-{running_perplexity:.3f}"
     torch.save(
         model.state_dict(),
         f"{model_name}.pt",
