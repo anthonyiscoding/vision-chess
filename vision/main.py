@@ -82,9 +82,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.test:
-        import vision.model.config.test as config
+        from vision.model.config.test import config
     else:
-        import vision.model.config.default as config
+        from vision.model.config.default import config
 
     setup_logging()
     freeze_support()

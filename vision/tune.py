@@ -3,7 +3,7 @@ import optuna
 import optuna.trial as ot
 import torch
 from torch.utils.data import DataLoader
-import vision.model.config.tune as config
+from vision.model.config.tune import config
 from vision.model.transformer import ChessModel
 from vision.model.data import NpyDataset
 from pgn_to_npy import list_npy_files

@@ -1,31 +1,34 @@
+from dataclasses import dataclass, field
+from vision.model.config import Config
 from vision.model.tokenizer import generate_all_possible_moves
 
 # TODO: Better config file management
 
-# Small FF network for testing
-emb_dim = 2048
-batch_size = 32
-# batch_size = 4 with emb_dim = 1024 seems to have the quickest reduction in running loss (8 -> 2 in 100 batches)
-# versus batch_size = 8 (8 -> 4 in 50 batches), (8 -> 4 in 100 too) and stabilizing after
-# End of epoch 0 it reaches loss of ~2.6 and stops learning (loss steady)
-# Validation loss curve matches learning loss
 
-# batch_size = 4 with emb_dim = 2048 is (8 -> 10 -> 3.7 in 100 batches)
-# TODO: I just need to use an optimization library to run tests
+@dataclass(frozen=True)
+class DefaultConfig(Config):
+    emb_dim: int = 768
+    batch_size: int = 30
+    vocabulary_size: int = field(
+        default_factory=lambda: len(generate_all_possible_moves())
+    )
+    num_epochs: int = 2
+    num_heads: int = 8
+    hidden_dim: int = field(init=False)
+    num_kv_heads: int = field(init=False)
+    head_dim: int = field(init=False)
+    qkv_bias: bool = True
+    max_seq_len: int = 400  # TODO: Figure out reasonable max sequence length
+    attn_dropout: float = 0.0
+    transformer_layers: int = 6
+    batch_limit: int | None = None
+    save_model: bool = True
+    learning_rate: float = 0.000374
 
-# batch_size = emb_dim / 64 # RAM constraints on my machine, ~36GB RAM (w/ only 1 worker)
-vocabulary_size = len(generate_all_possible_moves())
-num_epochs = 8
-num_heads = 8
-hidden_dim = emb_dim * 2
-num_kv_heads = num_heads
-# assert num_heads % num_kv_heads == 0, "num_heads must be evenly divisible by num_kv_heads"
-head_dim = emb_dim // num_heads
-qkv_bias = True
-max_seq_len = 400  # TODO: Figure out reasonable max sequence length
-# TODO: Temporarily zero as naive tokenizer depends on all previous moves
-attn_dropout = 0.0
-transformer_layers = 6
-batch_limit = None
-save_model = True
-learning_rate = 1e-3
+    def __post_init__(self):
+        object.__setattr__(self, "hidden_dim", self.emb_dim * 2)
+        object.__setattr__(self, "num_kv_heads", self.num_heads)
+        object.__setattr__(self, "head_dim", self.emb_dim // self.num_heads)
+
+
+config = DefaultConfig()

@@ -1,7 +1,9 @@
+from dataclasses import asdict
+import json
 import logging
 import torch
 from datetime import datetime
-import vision.model.config
+from vision.model.config.default import config
 from vision.model.tokenizer import special_tokens_to_embeddings
 import optuna.exceptions
 
@@ -16,7 +18,7 @@ def train(
     validation_dataset,
     training_dataloader,
     validation_dataloader,
-    config=vision.model.config,
+    config=config,
     trial=None,
 ):
     model.to(device)
@@ -67,7 +69,9 @@ def train(
         )
 
         if config.save_model and running_loss < best_loss:
-            _save_model(model, best_loss, epoch, running_loss, running_perplexity)
+            _save_model(
+                model, best_loss, epoch, config, running_loss, running_perplexity
+            )
             best_loss = running_loss
 
     return accuracy
@@ -185,14 +189,17 @@ def _validation_loop(
     return val_running_loss, val_running_perplexity, accuracy
 
 
-def _save_model(model, best_loss, epoch, running_loss, running_perplexity):
+def _save_model(model, best_loss, epoch, config, running_loss, running_perplexity):
     logger.info(
         "Saving model. Model had less loss than last epoch %.5f < %.5f | Perplexity: %.5f",
         running_loss,
         best_loss,
         running_perplexity,
     )
+    model_name = f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}-perplexity-{running_perplexity:.3f}"
     torch.save(
         model.state_dict(),
-        f"models/model-{datetime.now(): %Y-%m-%d-%H-%M-%S}-epoch-{epoch}-perplexity-{running_perplexity:.3f}.pt",
+        f"{model_name}.pt",
     )
+    with open(f"{model_name}-config.json", "w") as f:
+        json.dump(asdict(config), f)
