@@ -9,6 +9,7 @@ from vision.model.data import NpyDataset
 from pgn_to_npy import list_npy_files
 from vision.train import train
 from vision.main import collate_fn, setup_logging
+from vision.utils import get_device
 
 
 # TODO: The way config currently works should be improved
@@ -25,7 +26,7 @@ def define_model(trial: ot.Trial):
 
 
 def objective(trial: ot.Trial):
-    device = torch.device("mps")
+    device = get_device()
 
     training_files = list_npy_files("data/training")
     validation_files = list_npy_files("data/validation")

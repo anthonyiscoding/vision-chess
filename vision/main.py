@@ -2,13 +2,13 @@ import argparse
 import logging
 import sys
 from multiprocessing import freeze_support
-import torch
 from torch.utils.data import DataLoader
 from vision.model import transformer as t
 from vision.model.data import NpyDataset
 from vision.pgn_to_npy import list_npy_files
 from vision.model.tokenizer import special_tokens_to_embeddings
 from vision.train import train
+from vision.utils import get_device
 from torch.nn.utils.rnn import pad_sequence
 
 
@@ -40,7 +40,9 @@ def collate_fn(batch):
 
 
 def main(config):
-    device = torch.device("mps")
+
+    device = get_device()
+    logger.info(f"Using device: {device}")
 
     training_files = list_npy_files("data/training")
     validation_files = list_npy_files("data/validation")

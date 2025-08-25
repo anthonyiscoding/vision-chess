@@ -7,6 +7,7 @@ from vision.model import transformer as t
 from vision.model import tokenizer
 from vision.model.config.default import Config
 from vision.model.tokenizer import from_embedding
+from vision.utils import get_device
 
 parser = argparse.ArgumentParser(description="Run a pre-trained model")
 parser.add_argument("model_path", type=str, help="Path to the pre-trained model")
@@ -19,7 +20,7 @@ with open(model_config, "r") as f:
     config_dict = json.load(f)
     config = Config(**config_dict)
 
-device = torch.device("mps")
+device = get_device()
 model = t.ChessModel(config)
 model.load_state_dict(torch.load(model_path, map_location=device))
 model.eval()
