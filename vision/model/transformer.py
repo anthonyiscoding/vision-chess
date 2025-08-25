@@ -13,28 +13,28 @@ class ChessModel(nn.Module):
         super().__init__()
         input_dim = config.emb_dim
         hidden_dim = config.hidden_dim
-        ff = FeedForward(
-            gate_proj=nn.Sequential(
+        ff_config = {
+            "gate_proj": nn.Sequential(
                 nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.LayerNorm(hidden_dim)
             ),
-            down_proj=nn.Linear(hidden_dim, input_dim),
-        )
+            "down_proj": nn.Linear(hidden_dim, input_dim),
+        }
 
-        # kv_cache = KVCache()
-
-        mha = MultiHeadAttention(
-            embed_dim=config.emb_dim,
-            num_heads=config.num_heads,
-            num_kv_heads=config.num_kv_heads,
-            head_dim=config.head_dim,
-            q_proj=nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
-            k_proj=nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
-            v_proj=nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
-            output_proj=nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
-            pos_embeddings=RotaryPositionalEmbeddings(config.head_dim),
-            max_seq_len=config.max_seq_len,
-            attn_dropout=config.attn_dropout,
-        )
+        mha_config = {
+            "embed_dim": config.emb_dim,
+            "num_heads": config.num_heads,
+            "num_kv_heads": config.num_kv_heads,
+            "head_dim": config.head_dim,
+            "q_proj": nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
+            "k_proj": nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
+            "v_proj": nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
+            "output_proj": nn.Linear(
+                config.emb_dim, config.emb_dim, bias=config.qkv_bias
+            ),
+            "pos_embeddings": RotaryPositionalEmbeddings(config.head_dim),
+            "max_seq_len": config.max_seq_len,
+            "attn_dropout": config.attn_dropout,
+        }
 
         self.token_embedding = nn.Embedding(
             config.vocabulary_size, config.emb_dim, padding_idx=0
@@ -42,7 +42,9 @@ class ChessModel(nn.Module):
         self.positional_embedding = nn.Embedding(config.max_seq_len, config.emb_dim)
         self.transformer_blocks = nn.Sequential(
             *[
-                TransformerSelfAttentionLayer(attn=mha, mlp=ff)
+                TransformerSelfAttentionLayer(
+                    attn=MultiHeadAttention(**mha_config), mlp=FeedForward(**ff_config)
+                )
                 for _ in range(config.transformer_layers)
             ]
         )
