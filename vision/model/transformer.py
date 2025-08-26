@@ -8,15 +8,40 @@ from torchtune.modules import (
 from torchtune.modules.transformer import TransformerSelfAttentionLayer
 
 
+class RMSNorm(nn.Module):
+    def __init__(self, dim, eps=1e-6):
+        super().__init__()
+        self.eps = eps
+        self.scale = nn.Parameter(torch.ones(dim))
+
+    def forward(self, x):
+        normed = x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+        return self.scale * normed
+
+
+class PreNormTransformerLayer(nn.Module):
+    def __init__(self, attn, mlp, dim):
+        super().__init__()
+        self.norm1 = RMSNorm(dim)
+        self.attn = attn
+        self.norm2 = RMSNorm(dim)
+        self.mlp = mlp
+
+    def forward(self, x):
+        # residual scaling to avoid variance blowup
+        x = x + (self.attn(self.norm1(x)) / (2**0.5))
+        x = x + (self.mlp(self.norm2(x)) / (2**0.5))
+        return x
+
+
 class ChessModel(nn.Module):
     def __init__(self, config):
         super().__init__()
         input_dim = config.emb_dim
         hidden_dim = config.hidden_dim
+
         ff_config = {
-            "gate_proj": nn.Sequential(
-                nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.LayerNorm(hidden_dim)
-            ),
+            "gate_proj": nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU()),
             "down_proj": nn.Linear(hidden_dim, input_dim),
         }
 
@@ -39,29 +64,24 @@ class ChessModel(nn.Module):
         self.token_embedding = nn.Embedding(
             config.vocabulary_size, config.emb_dim, padding_idx=0
         )
-        # self.positional_embedding = nn.Embedding(config.max_seq_len, config.emb_dim)
-        self.transformer_blocks = nn.Sequential(
-            *[
-                TransformerSelfAttentionLayer(
-                    attn=MultiHeadAttention(**mha_config), mlp=FeedForward(**ff_config)
+
+        self.transformer_blocks = nn.ModuleList(
+            [
+                PreNormTransformerLayer(
+                    attn=MultiHeadAttention(**mha_config),
+                    mlp=FeedForward(**ff_config),
+                    dim=config.emb_dim,
                 )
                 for _ in range(config.transformer_layers)
             ]
         )
 
-        self.final_norm = nn.LayerNorm(config.emb_dim)
+        self.final_norm = RMSNorm(config.emb_dim)
         self.out_head = nn.Linear(config.emb_dim, config.vocabulary_size, bias=False)
 
     def forward(self, idx):
-        # _, seq_len = idx.shape
-        token_embeds = self.token_embedding(idx)
-        # positional_embeds = self.positional_embedding(
-        #     torch.arange(seq_len, device=idx.device)
-        # )
-
-        x = token_embeds  # + positional_embeds
-        x = self.transformer_blocks(x)
+        x = self.token_embedding(idx)
+        for block in self.transformer_blocks:
+            x = block(x)
         x = self.final_norm(x)
-        x = self.out_head(x)  # logits
-
-        return x
+        return self.out_head(x)
