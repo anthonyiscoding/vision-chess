@@ -18,10 +18,10 @@ def define_model_and_config(trial: ot.Trial):
     # config.transformer_layers = trial.suggest_int("transformer_layers", 2, 8)
     config.setenv("tune")
     config.batch_size = trial.suggest_int("batch_size", 2, 32, step=2)
-    config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048])
+    config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048, 4096])
     config.hidden_dim = config.emb_dim * 2
     config.head_dim = config.emb_dim // config.num_heads
-    config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
+    # config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
     config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1, log=True)
     config.transformer_layers = trial.suggest_int("transformer_layers", 6, 12, step=2)
 
@@ -41,7 +41,7 @@ def objective(trial: ot.Trial):
         dataset=training_dataset,
         batch_size=config.batch_size,
         collate_fn=collate_fn,
-        shuffle=True,
+        shuffle=False,
         num_workers=2,
     )
 
