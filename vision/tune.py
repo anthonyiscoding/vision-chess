@@ -74,7 +74,7 @@ if __name__ == "__main__":
     setup_logging()
     freeze_support()
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=1, timeout=6000)
+    study.optimize(objective, n_trials=100, timeout=6000)
 
     failed_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.FAIL])
     pruned_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.PRUNED])
