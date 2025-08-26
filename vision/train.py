@@ -27,7 +27,7 @@ def train(
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
     # TODO: Disabling the scheduler temporarily during testing
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.01)
 
     training_batch_count = len(training_dataset) // config.batch_size
     validation_batch_count = len(validation_dataset) // config.batch_size
@@ -54,7 +54,13 @@ def train(
     for epoch in range(config.num_epochs):
         logger.info("Starting epoch %d", epoch)
         running_loss, running_perplexity = _training_loop(
-            model, device, training_dataloader, config, loss_fn, optimizer, epoch
+            model,
+            device,
+            training_dataloader,
+            config,
+            loss_fn,
+            optimizer,
+            epoch,
         )
 
         val_running_loss, val_running_perplexity, accuracy = _validation_loop(
@@ -69,6 +75,8 @@ def train(
             val_running_loss,
             val_running_perplexity,
         )
+
+        scheduler.step()
 
         if config.save_model and running_loss < best_loss:
             _save_model(
@@ -138,9 +146,7 @@ def _training_loop(
                     running_loss,
                     running_perplexity,
                 )
-            # scheduler.step()
 
-            # TODO: Better batch limiting
         if config.batch_limit and i + 1 > config.batch_limit:
             break
     return running_loss, running_perplexity

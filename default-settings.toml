@@ -8,12 +8,12 @@ num_heads = 8
 # hidden_dim = 2048
 # head_dim = 128
 qkv_bias = true
-max_seq_len = 400  # TODO: figure out reasonable max sequence length
+max_seq_len = 200  # TODO: figure out reasonable max sequence length
 attn_dropout = 0.0
 transformer_layers = 6
 # batch_limit = 0
 save_model = true
-learning_rate = 0.000374
+learning_rate = 1e-5
 
 [test]
 emb_dim = 64
@@ -25,12 +25,12 @@ num_heads = 8
 # hidden_dim = 2048
 # head_dim = 128
 qkv_bias = true
-max_seq_len = 400  # TODO: figure out reasonable max sequence length
+max_seq_len = 200  # TODO: figure out reasonable max sequence length
 attn_dropout = 0.0
 transformer_layers = 6
 # batch_limit = 0
 save_model = false
-learning_rate = 0.000374
+learning_rate = 1e-5
 
 [tune]
 emb_dim = 64
@@ -42,9 +42,9 @@ num_heads = 8
 # hidden_dim = 2048
 # head_dim = 128
 qkv_bias = true
-max_seq_len = 400  # TODO: figure out reasonable max sequence length
+max_seq_len = 200  # TODO: figure out reasonable max sequence length
 attn_dropout = 0.0
 transformer_layers = 6
 batch_limit = 250
 save_model = false
-learning_rate = 0.000374
+learning_rate = 1e-5
