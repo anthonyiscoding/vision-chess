@@ -24,7 +24,7 @@ def setup_hook(config):
 
 config = Dynaconf(
     envvar_prefix="VISION",
-    settings_files=["settings.toml", ".secrets.toml"],
+    settings_files=["default-settings.toml", ".secrets.toml", "custom-settings.toml"],
     environments=True,
     load_dotenv=True,
     env_switcher="VISION_ENV",
