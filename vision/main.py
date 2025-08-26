@@ -1,10 +1,10 @@
-import argparse
 import logging
 import sys
 from multiprocessing import freeze_support
 from torch.utils.data import DataLoader
 from vision.model import transformer as t
 from vision.model.data import NpyDataset
+from vision.model.config import config
 from vision.pgn_to_npy import list_npy_files
 from vision.model.tokenizer import special_tokens_to_embeddings
 from vision.train import train
@@ -79,15 +79,6 @@ def main(config):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train a GPT-like model to play Chess")
-    parser.add_argument("--test", default=False, action="store_true")
-    args = parser.parse_args()
-
-    if args.test:
-        from vision.model.config.test import config
-    else:
-        from vision.model.config.default import config
-
     setup_logging()
     freeze_support()
     main(config=config)

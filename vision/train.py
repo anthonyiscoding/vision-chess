@@ -3,7 +3,7 @@ import json
 import logging
 import torch
 from datetime import datetime
-from vision.model.config.default import config
+from vision.model.config import config
 from vision.model.tokenizer import special_tokens_to_embeddings
 import optuna.exceptions
 
@@ -18,7 +18,7 @@ def train(
     validation_dataset,
     training_dataloader,
     validation_dataloader,
-    config=config,
+    config,
     trial=None,
 ):
     model.to(device)
@@ -47,6 +47,8 @@ def train(
         validation_batch_count,
     )
     logger.info("Batch size: %d", config.batch_size)
+
+    logger.info("Full config: %s", config.as_dict())
 
     best_loss = torch.inf
     for epoch in range(config.num_epochs):

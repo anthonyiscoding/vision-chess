@@ -5,7 +5,7 @@ import torch
 from pathlib import Path
 from vision.model import transformer as t
 from vision.model import tokenizer
-from vision.model.config.default import Config
+from vision.model.config import config
 from vision.model.tokenizer import from_embedding
 from vision.utils import get_device
 
@@ -17,8 +17,7 @@ model_path = Path(args.model_path)
 
 model_config = Path(f"{model_path.parent}/{model_path.stem}-config.json")
 with open(model_config, "r") as f:
-    config_dict = json.load(f)
-    config = Config(**config_dict)
+    config = json.load(f)
 
 device = get_device()
 model = t.ChessModel(config)

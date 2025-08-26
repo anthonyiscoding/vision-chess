@@ -1,9 +1,10 @@
+from dataclasses import asdict
+from types import SimpleNamespace
 from multiprocessing import freeze_support
 import optuna
 import optuna.trial as ot
-import torch
 from torch.utils.data import DataLoader
-from vision.model.config.tune import config
+from vision.model.config import config
 from vision.model.transformer import ChessModel
 from vision.model.data import NpyDataset
 from pgn_to_npy import list_npy_files
@@ -13,16 +14,18 @@ from vision.utils import get_device
 
 
 # TODO: The way config currently works should be improved
-def define_model(trial: ot.Trial):
+def define_model_and_config(trial: ot.Trial):
     # config.transformer_layers = trial.suggest_int("transformer_layers", 2, 8)
+    config.setenv("tune")
     config.batch_size = trial.suggest_int("batch_size", 2, 32, step=2)
     config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048])
     config.hidden_dim = config.emb_dim * 2
     config.head_dim = config.emb_dim // config.num_heads
     config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
     config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1, log=True)
+    config.transformer_layers = trial.suggest_int("transformer_layers", 6, 12, step=2)
 
-    return ChessModel(config)
+    return ChessModel(config), config
 
 
 def objective(trial: ot.Trial):
@@ -50,7 +53,7 @@ def objective(trial: ot.Trial):
         num_workers=2,
     )
 
-    model = define_model(trial)
+    model, new_config = define_model_and_config(trial)
     accuracy = train(
         model=model,
         device=device,
@@ -58,7 +61,7 @@ def objective(trial: ot.Trial):
         validation_dataset=validation_dataset,
         training_dataloader=training_dataloader,
         validation_dataloader=validation_dataloader,
-        config=config,
+        config=new_config,
         trial=trial,
     )
 
@@ -69,7 +72,7 @@ if __name__ == "__main__":
     setup_logging()
     freeze_support()
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=10, timeout=600)
+    study.optimize(objective, n_trials=100, timeout=600)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.COMPLETE])

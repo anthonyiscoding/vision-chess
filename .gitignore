@@ -221,3 +221,6 @@ models/
 
 # Notes
 trial_notes
+
+# Ignore dynaconf secret files
+.secrets.*

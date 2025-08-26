@@ -1,20 +1,36 @@
-from dataclasses import dataclass
+from dynaconf import Dynaconf
+from vision.model.tokenizer import generate_all_possible_moves
 
 
-@dataclass(frozen=True)
-class Config:
-    emb_dim: int
-    batch_size: int
-    vocabulary_size: int
-    num_epochs: int
-    num_heads: int
-    hidden_dim: int
-    num_kv_heads: int
-    head_dim: int
-    qkv_bias: bool
-    max_seq_len: int
-    attn_dropout: float
-    transformer_layers: int
-    batch_limit: int | None
-    save_model: bool
-    learning_rate: float
+def setup_hook(config):
+    data = {"dynaconf_merge": True}
+    if "num_kv_heads" not in config:
+        data["num_kv_heads"] = config["num_heads"]
+
+    if "hidden_dim" not in config:
+        data["hidden_dim"] = config["emb_dim"] * 2
+
+    if "head_dim" not in config:
+        data["head_dim"] = config["emb_dim"] // config["num_heads"]
+
+    if "batch_limit" not in config:
+        data["batch_limit"] = None
+
+    if "vocabulary_size" not in config:
+        data["vocabulary_size"] = len(generate_all_possible_moves())
+
+    return data
+
+
+config = Dynaconf(
+    envvar_prefix="VISION",
+    settings_files=["settings.toml", ".secrets.toml"],
+    environments=True,
+    load_dotenv=True,
+    env_switcher="VISION_ENV",
+    post_hooks=setup_hook,
+)
+
+
+# `envvar_prefix` = export envvars with `export DYNACONF_FOO=bar`.
+# `settings_files` = Load these files in the order.
