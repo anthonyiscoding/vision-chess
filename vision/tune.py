@@ -1,5 +1,4 @@
-from dataclasses import asdict
-from types import SimpleNamespace
+import logging
 from multiprocessing import freeze_support
 import optuna
 import optuna.trial as ot
@@ -13,16 +12,19 @@ from vision.main import collate_fn, setup_logging
 from vision.utils import get_device
 
 
+logger = logging.getLogger(__name__)
+
+
 # TODO: The way config currently works should be improved
 def define_model_and_config(trial: ot.Trial):
     # config.transformer_layers = trial.suggest_int("transformer_layers", 2, 8)
     config.setenv("tune")
-    config.batch_size = trial.suggest_int("batch_size", 2, 32, step=2)
+    config.batch_size = trial.suggest_int("batch_size", 2, 24, step=2)
     config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048, 4096])
     config.hidden_dim = config.emb_dim * 2
     config.head_dim = config.emb_dim // config.num_heads
     # config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
-    config.learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1, log=True)
+    config.learning_rate = trial.suggest_float("learning_rate", 3e-5, 1e-4, log=True)
     config.transformer_layers = trial.suggest_int("transformer_layers", 6, 12, step=2)
 
     return ChessModel(config), config
@@ -72,21 +74,25 @@ if __name__ == "__main__":
     setup_logging()
     freeze_support()
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=100, timeout=600)
+    study.optimize(objective, n_trials=1, timeout=6000)
 
+    failed_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.FAIL])
     pruned_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.COMPLETE])
 
-    print("Study statistics: ")
-    print("  Number of finished trials: ", len(study.trials))
-    print("  Number of pruned trials: ", len(pruned_trials))
-    print("  Number of complete trials: ", len(complete_trials))
+    logger.info("Study statistics: ")
+    logger.info("Number of finished trials: %d", len(study.trials))
+    logger.info("Number of failed trials: %d", len(failed_trials))
+    logger.info("Number of pruned trials: %d", len(pruned_trials))
+    logger.info("Number of complete trials: %d", len(complete_trials))
 
-    print("Best trial:")
+    logger.info("Best trial:")
     trial = study.best_trial
 
-    print("  Value: ", trial.value)
+    logger.info("Value: %s", str(trial.value))
 
-    print("  Params: ")
+    logger.info("Params: ")
     for key, value in trial.params.items():
-        print("    {}: {}".format(key, value))
+        logger.info("    %s: %s", key, value)
+
+    logger.info("All trials: %s", str(study.trials))

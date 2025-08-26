@@ -35,7 +35,7 @@ learning_rate = 0.000374
 [tune]
 emb_dim = 64
 batch_size = 2
-num_epochs = 2
+num_epochs = 1
 num_heads = 8
 # num_kv_heads, hidden_dim, and head_dim will be set automatically if not defined
 # num_kv_heads = 8
