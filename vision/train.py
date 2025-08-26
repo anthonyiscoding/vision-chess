@@ -104,10 +104,27 @@ def _training_loop(
             continue
         if mask.any():
             loss = loss_fn(output[mask], target[mask])
+            if torch.isnan(loss) or torch.isinf(loss):
+                logger.error(
+                    "Loss is %s! Skipping batch. Input: %s, Output: %s, Target: %s",
+                    loss,
+                    input,
+                    output,
+                    target,
+                )
+                continue
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
-            total_loss += loss.item() * mask.sum().item()
-            total_tokens += mask.sum().item()
+            mask_sum = mask.sum().item()
+            if mask_sum == 0:
+                logger.warning(
+                    "All tokens are padding, skipping batch %d with input: %s",
+                    i,
+                    input[0],
+                )
+            total_loss += loss.item() * mask_sum
+            total_tokens += mask_sum
             running_loss = (
                 total_loss / total_tokens if total_tokens > 0 else float("inf")
             )
@@ -158,8 +175,24 @@ def _validation_loop(
                 continue
             if val_mask.any():
                 val_loss = loss_fn(val_output[val_mask], val_target[val_mask])
-                val_total_loss += val_loss.item() * val_mask.sum().item()
-                val_total_tokens += val_mask.sum().item()
+                if torch.isnan(val_loss) or torch.isinf(val_loss):
+                    logger.error(
+                        "Loss is %s! Skipping batch. Input: %s, Output: %s, Target: %s",
+                        val_loss,
+                        val_input,
+                        val_output,
+                        val_target,
+                    )
+                    continue
+                val_mask_sum = val_mask.sum().item()
+                if val_mask_sum == 0:
+                    logger.warning(
+                        "All tokens are padding, skipping batch %d with input: %s",
+                        v_i,
+                        val_input[0],
+                    )
+                val_total_loss += val_loss.item() * val_mask_sum
+                val_total_tokens += val_mask_sum
                 val_running_loss = (
                     val_total_loss / val_total_tokens
                     if val_total_tokens > 0
