@@ -1,11 +1,6 @@
 import torch
 import torch.nn as nn
-from torchtune.modules import (
-    FeedForward,
-    MultiHeadAttention,
-    RotaryPositionalEmbeddings,
-)
-from torchtune.modules.transformer import TransformerSelfAttentionLayer
+from torchtune.modules import FeedForward
 
 
 class RMSNorm(nn.Module):
@@ -29,7 +24,10 @@ class PreNormTransformerLayer(nn.Module):
 
     def forward(self, x):
         # residual scaling to avoid variance blowup
-        x = x + (self.attn(self.norm1(x)) / (2**0.5))
+        normed_x = self.norm1(x)
+        # PyTorch MultiheadAttention expects (query, key, value) and returns (output, weights)
+        attn_output, _ = self.attn(normed_x, normed_x, normed_x)
+        x = x + (attn_output / (2**0.5))
         x = x + (self.mlp(self.norm2(x)) / (2**0.5))
         return x
 
@@ -45,22 +43,6 @@ class ChessModel(nn.Module):
             "down_proj": nn.Linear(hidden_dim, input_dim),
         }
 
-        mha_config = {
-            "embed_dim": config.emb_dim,
-            "num_heads": config.num_heads,
-            "num_kv_heads": config.num_kv_heads,
-            "head_dim": config.head_dim,
-            "q_proj": nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
-            "k_proj": nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
-            "v_proj": nn.Linear(config.emb_dim, config.emb_dim, bias=config.qkv_bias),
-            "output_proj": nn.Linear(
-                config.emb_dim, config.emb_dim, bias=config.qkv_bias
-            ),
-            "pos_embeddings": RotaryPositionalEmbeddings(config.head_dim),
-            "max_seq_len": config.max_seq_len,
-            "attn_dropout": config.attn_dropout,
-        }
-
         self.token_embedding = nn.Embedding(
             config.vocabulary_size, config.emb_dim, padding_idx=0
         )
@@ -68,7 +50,13 @@ class ChessModel(nn.Module):
         self.transformer_blocks = nn.ModuleList(
             [
                 PreNormTransformerLayer(
-                    attn=MultiHeadAttention(**mha_config),
+                    attn=nn.MultiheadAttention(
+                        embed_dim=config.emb_dim,
+                        num_heads=config.num_heads,
+                        dropout=config.attn_dropout,
+                        bias=config.qkv_bias,
+                        batch_first=True,
+                    ),
                     mlp=FeedForward(**ff_config),
                     dim=config.emb_dim,
                 )
