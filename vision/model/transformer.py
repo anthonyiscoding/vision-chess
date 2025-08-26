@@ -46,6 +46,7 @@ class ChessModel(nn.Module):
         self.token_embedding = nn.Embedding(
             config.vocabulary_size, config.emb_dim, padding_idx=0
         )
+        self.positional_embedding = nn.Embedding(config.max_seq_len, config.emb_dim)
 
         self.transformer_blocks = nn.ModuleList(
             [
@@ -68,7 +69,13 @@ class ChessModel(nn.Module):
         self.out_head = nn.Linear(config.emb_dim, config.vocabulary_size, bias=False)
 
     def forward(self, idx):
-        x = self.token_embedding(idx)
+        _, seq_len = idx.shape
+        token_embeds = self.token_embedding(idx)
+        positional_embeds = self.positional_embedding(
+            torch.arange(seq_len, device=idx.device)
+        )
+
+        x = token_embeds + positional_embeds
         for block in self.transformer_blocks:
             x = block(x)
         x = self.final_norm(x)
