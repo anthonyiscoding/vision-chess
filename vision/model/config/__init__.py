@@ -3,7 +3,7 @@ from vision.model.tokenizer import generate_all_possible_moves
 
 
 def setup_hook(config):
-    data = {"dynaconf_merge": True}
+    data = {"dynaconf_merge": False}
     if "num_kv_heads" not in config:
         data["num_kv_heads"] = config["num_heads"]
 
