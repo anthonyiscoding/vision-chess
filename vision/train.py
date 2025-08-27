@@ -238,20 +238,21 @@ def _save_model(model, best_loss, epoch, config, running_loss, running_perplexit
         best_loss,
         running_perplexity,
     )
-    model_name = f"models/model-{datetime.now():%Y-%m-%d-%H-%M-%S}-env-{config.env}-epoch-{epoch}-perplexity-{running_perplexity:.3f}"
+    data: dict = config.to_dict(env=config.env)
+    env = data.get("ENV", "unknown")
+    model_name = f"models/model-{datetime.now():%Y-%m-%d-%H-%M-%S}-env-{env}-epoch-{epoch}-perplexity-{running_perplexity:.3f}"
     torch.save(
         model.state_dict(),
         f"{model_name}.pt",
     )
-    data = config.to_dict(env=config.env)
 
     # Dynaconf doesn't remove all unnecessary variables
-    data.pop("LOAD_DOTENV")
-    data.pop("POST_HOOKS")
+    data.pop("LOAD_DOTENV", None)
+    data.pop("POST_HOOKS", None)
 
     loaders.write(
         f"{model_name}-config.json",
         DynaBox(data).to_dict(),
         merge=False,
-        env=config.env,
+        env=env,
     )
