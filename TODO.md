@@ -1,3 +1,4 @@
+- [ ] Migrate to pytorch-lightning
 - [ ] During development I stopped doing the sliding window for training so it really wants to play e2e4 even when that's not a legal move
 - [ ] I clearly need to do some more data cleaning (ie. "<|unk|>" tokens just shouldn't happen)
 - [ ] The training data is all modern GMs so it wants to play the same openings
