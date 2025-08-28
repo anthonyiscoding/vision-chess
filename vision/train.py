@@ -250,6 +250,8 @@ def _save_model(model, best_loss, epoch, config, running_loss, running_perplexit
     data.pop("LOAD_DOTENV", None)
     data.pop("POST_HOOKS", None)
 
+    data = {key.lower(): value for key, value in data.items()}
+
     loaders.write(
         f"{model_name}-config.json",
         DynaBox(data).to_dict(),

@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 import torch
+import types
 from pathlib import Path
 from vision.model import transformer as t
 from vision.model import tokenizer
@@ -19,6 +20,7 @@ model_config = Path(f"{model_path.parent}/{model_path.stem}-config.json")
 with open(model_config, "r") as f:
     config = json.load(f)
 
+config = types.SimpleNamespace(**config["default"])
 device = get_device()
 model = t.ChessModel(config)
 model.load_state_dict(torch.load(model_path, map_location=device))
