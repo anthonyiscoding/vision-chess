@@ -131,6 +131,7 @@ class ChessModel(L.LightningModule):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
+            logger=True,
         )
         self.log(
             f"{stage}_accuracy",
@@ -150,7 +151,7 @@ class ChessModel(L.LightningModule):
         return result["loss"]
 
     def validation_step(self, batch, batch_idx):
-        result = self._shared_step(batch, batch_idx, "validate")
+        result = self._shared_step(batch, batch_idx, "val")
         if result is None:
             return None
         return result

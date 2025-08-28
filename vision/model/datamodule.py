@@ -52,4 +52,5 @@ class ChessDataModule(L.LightningDataModule):
             collate_fn=collate_fn,
             shuffle=False,
             num_workers=2,
+            persistent_workers=True,
         )

@@ -226,4 +226,4 @@ trial_notes
 .secrets.*
 custom-settings.toml
 
-lightning_logs/
+logs/

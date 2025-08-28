@@ -1,5 +1,3 @@
-import logging
-import sys
 from multiprocessing import freeze_support
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
@@ -7,18 +5,6 @@ from vision.model import transformer as t
 from vision.model.datamodule import ChessDataModule
 from vision.model.config import config
 from vision.utils import get_device
-
-
-def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        stream=sys.stdout,
-        force=True,
-    )
-
-
-logger = logging.getLogger(__name__)
 
 
 def main(config):
@@ -34,19 +20,19 @@ def main(config):
             filename="model-{epoch:02d}-{val_loss:.3f}",
             monitor="val_loss",
             mode="min",
-            save_top_k=3,
-            save_last=True,
+            save_top_k=2,
+            save_last="link",
         )
         callbacks.append(checkpoint_callback)
 
-    # TODO: Decide if keeping
-    early_stopping = EarlyStopping(
+    early_stopping_val_loss = EarlyStopping(
         monitor="val_loss",
         patience=2,
         mode="min",
+        stopping_threshold=1e-2,
         verbose=True,
     )
-    callbacks.append(early_stopping)
+    callbacks.append(early_stopping_val_loss)
 
     trainer = L.Trainer(
         max_epochs=config.num_epochs,
@@ -64,6 +50,5 @@ def main(config):
 
 
 if __name__ == "__main__":
-    setup_logging()
     freeze_support()
     main(config=config)
