@@ -1,3 +1,5 @@
+from argparse import Namespace
+from types import SimpleNamespace
 from dynaconf import Dynaconf
 from vision.model.tokenizer import generate_all_possible_moves
 
@@ -31,6 +33,12 @@ config = Dynaconf(
     post_hooks=setup_hook,
 )
 
+# TODO: Switch off of dynaconf this is ridiculous
+config: dict = config.to_dict(env=config.env)
+config.pop("LOAD_DOTENV", None)
+config.pop("POST_HOOKS", None)
+config = {key.lower(): value for key, value in config.items()}
+config = Namespace(**config)
 
 # `envvar_prefix` = export envvars with `export DYNACONF_FOO=bar`.
 # `settings_files` = Load these files in the order.

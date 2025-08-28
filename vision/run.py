@@ -1,13 +1,10 @@
 import argparse
-import json
 import sys
 import torch
-import types
 from pathlib import Path
 from vision.model import transformer as t
 from vision.model import tokenizer
 from vision.model.tokenizer import from_embedding
-from vision.utils import get_device
 
 parser = argparse.ArgumentParser(description="Run a pre-trained model")
 parser.add_argument("model_path", type=str, help="Path to the pre-trained model")

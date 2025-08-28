@@ -225,3 +225,5 @@ trial_notes
 # Ignore dynaconf secret files and custom settings
 .secrets.*
 custom-settings.toml
+
+lightning_logs/

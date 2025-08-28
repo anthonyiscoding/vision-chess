@@ -35,7 +35,7 @@ class PreNormTransformerLayer(nn.Module):
 
 
 class ChessModel(L.LightningModule):
-    def __init__(self, config: dict):
+    def __init__(self, config):
         super().__init__()
         self.config = config
         self.save_hyperparameters(config)
