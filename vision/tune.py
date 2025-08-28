@@ -7,10 +7,10 @@ from vision.model.config import config
 from vision.model.transformer import ChessModel
 from vision.model.data import NpyDataset
 from pgn_to_npy import list_npy_files
-from vision.train import train
 from vision.main import collate_fn, setup_logging
 from vision.utils import get_device
 
+raise Exception("Need to update")
 
 logger = logging.getLogger(__name__)
 
