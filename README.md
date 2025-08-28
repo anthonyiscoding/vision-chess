@@ -3,7 +3,7 @@
 # About
 Vision is a small in-progress model designed to predict the next move in a chess game using a GPT-like model.
 
-It's a hobby project helping me learn more about machine learning without using/referencing pytorch-nnue's techniques — at least for now.
+It's a hobby project and not to be taken too seriously. For more proven neural network architectures check out [pytorch-nnue](https://official-stockfish.github.io/docs/nnue-pytorch-wiki/docs/nnue.html). 
 
 # Installation
 Installation can be done with poetry:

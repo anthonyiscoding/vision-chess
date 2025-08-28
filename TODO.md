@@ -6,3 +6,5 @@
 - [ ] Padding is also an issue, batches should all get padded to longest length sequence but they all get padded to max sequence length instead
 - [ ] Model is way too big for the amount of data (try 1024 emb_dims x 8 transformer_layers)
 - [ ] If dataset is too small for model's size then it won't learn effectively, figure out the right balance
+    - [ ] Google Chinchilla research says 1 param = 20-25 tokens
+- [ ] Remove the impossible tokens (ex. a1a1) from the tokenization scheme
