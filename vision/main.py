@@ -45,8 +45,10 @@ def main(config):
         gradient_clip_val=1.0,
         log_every_n_steps=10,
         logger=logger,
-        # limit_train_batches=config.batch_limit if config.batch_limit else 1.0,
-        # limit_val_batches=config.batch_limit if config.batch_limit else 1.0,
+        limit_train_batches=config.batch_limit if config.batch_limit else 1.0,
+        limit_val_batches=(
+            max(int(config.batch_limit * 0.1), 2) if config.batch_limit else 1.0
+        ),
     )
 
     trainer.fit(model, data_module)
