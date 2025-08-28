@@ -6,7 +6,6 @@ import types
 from pathlib import Path
 from vision.model import transformer as t
 from vision.model import tokenizer
-from vision.model.config import config
 from vision.model.tokenizer import from_embedding
 from vision.utils import get_device
 
@@ -16,14 +15,7 @@ args = parser.parse_args()
 
 model_path = Path(args.model_path)
 
-model_config = Path(f"{model_path.parent}/{model_path.stem}-config.json")
-with open(model_config, "r") as f:
-    config = json.load(f)
-
-config = types.SimpleNamespace(**config["default"])
-device = get_device()
-model = t.ChessModel(config)
-model.load_state_dict(torch.load(model_path, map_location=device))
+model = t.ChessModel.load_from_checkpoint(model_path)
 model.eval()
 
 

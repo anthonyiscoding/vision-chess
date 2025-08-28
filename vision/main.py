@@ -1,15 +1,12 @@
 import logging
 import sys
 from multiprocessing import freeze_support
-from torch.utils.data import DataLoader
+import lightning as L
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from vision.model import transformer as t
-from vision.model.data import NpyDataset
+from vision.model.datamodule import ChessDataModule
 from vision.model.config import config
-from vision.pgn_to_npy import list_npy_files
-from vision.model.tokenizer import special_tokens_to_embeddings
-from vision.train import train
 from vision.utils import get_device
-from torch.nn.utils.rnn import pad_sequence
 
 
 def setup_logging():
@@ -24,58 +21,46 @@ def setup_logging():
 logger = logging.getLogger(__name__)
 
 
-def collate_fn(batch):
-    input_ids, target_ids = zip(*batch)
-    input_ids = pad_sequence(
-        input_ids,
-        batch_first=True,
-        padding_value=special_tokens_to_embeddings["<|pad|>"],
-    )
-    target_ids = pad_sequence(
-        target_ids,
-        batch_first=True,
-        padding_value=special_tokens_to_embeddings["<|pad|>"],
-    )
-    return input_ids, target_ids
-
-
 def main(config):
-
-    device = get_device()
-    logger.info(f"Using device: {device}")
-
-    training_files = list_npy_files("data/training")
-    validation_files = list_npy_files("data/validation")
-
-    training_dataset = NpyDataset(training_files)
-    validation_dataset = NpyDataset(validation_files)
-
-    training_dataloader = DataLoader(
-        dataset=training_dataset,
-        batch_size=config.batch_size,
-        collate_fn=collate_fn,
-        shuffle=True,
-        num_workers=2,
-    )
-
-    validation_dataloader = DataLoader(
-        dataset=validation_dataset,
-        batch_size=config.batch_size,
-        collate_fn=collate_fn,
-        shuffle=False,
-        num_workers=2,
-    )
-
+    data_module = ChessDataModule(config)
     model = t.ChessModel(config)
-    train(
-        model=model,
-        device=device,
-        training_dataset=training_dataset,
-        validation_dataset=validation_dataset,
-        training_dataloader=training_dataloader,
-        validation_dataloader=validation_dataloader,
-        config=config,
+
+    callbacks = []
+
+    if config.save_model:
+        # Lightning checkpoint callback - saves .ckpt files
+        checkpoint_callback = ModelCheckpoint(
+            dirpath="models/",
+            filename="model-{epoch:02d}-{val_loss:.3f}",
+            monitor="val_loss",
+            mode="min",
+            save_top_k=3,
+            save_last=True,
+        )
+        callbacks.append(checkpoint_callback)
+
+    # TODO: Decide if keeping
+    early_stopping = EarlyStopping(
+        monitor="val_loss",
+        patience=2,
+        mode="min",
+        verbose=True,
     )
+    callbacks.append(early_stopping)
+
+    trainer = L.Trainer(
+        max_epochs=config.num_epochs,
+        callbacks=callbacks,
+        accelerator="auto",
+        devices="auto",
+        precision=("16-mixed" if get_device().type == "cuda" else "32"),
+        gradient_clip_val=1.0,
+        log_every_n_steps=10,
+        # limit_train_batches=config.batch_limit if config.batch_limit else 1.0,
+        # limit_val_batches=config.batch_limit if config.batch_limit else 1.0,
+    )
+
+    trainer.fit(model, data_module)
 
 
 if __name__ == "__main__":
