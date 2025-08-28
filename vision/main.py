@@ -1,6 +1,7 @@
 from multiprocessing import freeze_support
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+from lightning.pytorch.loggers import TensorBoardLogger
 from vision.model import transformer as t
 from vision.model.datamodule import ChessDataModule
 from vision.model.config import config
@@ -10,6 +11,7 @@ from vision.utils import get_device
 def main(config):
     data_module = ChessDataModule(config)
     model = t.ChessModel(config)
+    logger = TensorBoardLogger(save_dir="logs", name=config.env)
 
     callbacks = []
 
@@ -42,6 +44,7 @@ def main(config):
         precision=("16-mixed" if get_device().type == "cuda" else "32"),
         gradient_clip_val=1.0,
         log_every_n_steps=10,
+        logger=logger,
         # limit_train_batches=config.batch_limit if config.batch_limit else 1.0,
         # limit_val_batches=config.batch_limit if config.batch_limit else 1.0,
     )
