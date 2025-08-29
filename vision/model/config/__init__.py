@@ -21,6 +21,9 @@ def setup_hook(config):
     if "vocabulary_size" not in config:
         data["vocabulary_size"] = len(generate_all_possible_moves())
 
+    if "fast_dev_run" not in config:
+        data["fast_dev_run"] = None
+
     return data
 
 

@@ -49,6 +49,7 @@ def main(config):
         limit_val_batches=(
             max(int(config.batch_limit * 0.1), 2) if config.batch_limit else 1.0
         ),
+        fast_dev_run=config.fast_dev_run if config.fast_dev_run else False,
     )
 
     trainer.fit(model, data_module)
