@@ -5,6 +5,7 @@ from pathlib import Path
 from vision.model import transformer as t
 from vision.model import tokenizer
 from vision.model.tokenizer import from_embedding
+from vision.utils import get_device
 
 parser = argparse.ArgumentParser(description="Run a pre-trained model")
 parser.add_argument("model_path", type=str, help="Path to the pre-trained model")
@@ -13,6 +14,10 @@ args = parser.parse_args()
 model_path = Path(args.model_path)
 
 model = t.ChessModel.load_from_checkpoint(model_path)
+device = get_device()
+model.to(device)
+model.stat
+
 model.eval()
 
 
@@ -22,13 +27,11 @@ def main():
         line = line.strip()
         if not line:
             continue
-        # Split input into 4-char moves
         moves = [line[i : i + 4] for i in range(0, len(line), 4)]
         input_ids = tokenizer.encode_array(moves)
-        input_tensor = torch.tensor([input_ids], dtype=torch.long)  # batch size 1
+        input_tensor = torch.tensor([input_ids], dtype=torch.long, device=device)
         with torch.no_grad():
             logits = model(input_tensor)
-            # Get logits for last position
             next_logits = logits[0, -1]
             print(f"Logits: {next_logits}")
             top5 = torch.topk(next_logits, 5)
