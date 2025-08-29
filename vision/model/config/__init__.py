@@ -37,7 +37,7 @@ config = Dynaconf(
 )
 
 # TODO: Switch off of dynaconf this is ridiculous
-config: dict = config.to_dict(env=config.env)
+config = config.to_dict(env=config.env)
 config.pop("LOAD_DOTENV", None)
 config.pop("POST_HOOKS", None)
 config = {key.lower(): value for key, value in config.items()}

@@ -1,98 +1,102 @@
+import copy
 import logging
-from multiprocessing import freeze_support
+import sys
 import optuna
 import optuna.trial as ot
-from torch.utils.data import DataLoader
+import lightning as L
+from multiprocessing import freeze_support
 from vision.model.config import config
 from vision.model.transformer import ChessModel
-from vision.model.data import NpyDataset
-from pgn_to_npy import list_npy_files
-from vision.main import collate_fn, setup_logging
+from vision.model.datamodule import ChessDataModule
+from lightning.pytorch.callbacks import EarlyStopping
+from lightning.pytorch.loggers import TensorBoardLogger
+from optuna.integration import PyTorchLightningPruningCallback
+
 from vision.utils import get_device
 
-raise Exception("Need to update")
 
-logger = logging.getLogger(__name__)
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stdout,
+        force=True,
+    )
 
 
-# TODO: The way config currently works should be improved
-def define_model_and_config(trial: ot.Trial):
-    # config.transformer_layers = trial.suggest_int("transformer_layers", 2, 8)
-    config.setenv("tune")
-    config.batch_size = trial.suggest_int("batch_size", 2, 24, step=2)
-    config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048, 4096])
-    config.hidden_dim = config.emb_dim * 2
-    config.head_dim = config.emb_dim // config.num_heads
-    # config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
-    config.learning_rate = trial.suggest_float("learning_rate", 3e-5, 1e-4, log=True)
-    config.transformer_layers = trial.suggest_int("transformer_layers", 6, 12, step=2)
-
-    return ChessModel(config), config
+stdout_logger = logging.getLogger(__name__)
 
 
 def objective(trial: ot.Trial):
-    device = get_device()
+    L.seed_everything(123)
+    new_config = copy.deepcopy(config)
 
-    training_files = list_npy_files("data/training")
-    validation_files = list_npy_files("data/validation")
+    new_config.batch_size = trial.suggest_int("batch_size", 2, 24, step=2)
+    new_config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048, 4096])
+    new_config.hidden_dim = new_config.emb_dim * 2
+    new_config.head_dim = new_config.emb_dim // new_config.num_heads
+    new_config.learning_rate = trial.suggest_float(
+        "learning_rate", 3e-5, 1e-3, log=True
+    )
+    new_config.transformer_layers = trial.suggest_int(
+        "transformer_layers", 2, 12, step=2
+    )
+    # config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
 
-    training_dataset = NpyDataset(training_files)
-    validation_dataset = NpyDataset(validation_files)
+    model = ChessModel(new_config)
+    data_module = ChessDataModule(new_config)
 
-    training_dataloader = DataLoader(
-        dataset=training_dataset,
-        batch_size=config.batch_size,
-        collate_fn=collate_fn,
-        shuffle=False,
-        num_workers=2,
+    early_stop_callback = EarlyStopping(
+        monitor="val_loss", patience=5, verbose=False, mode="min"
     )
 
-    validation_dataloader = DataLoader(
-        dataset=validation_dataset,
-        batch_size=config.batch_size,
-        collate_fn=collate_fn,
-        shuffle=False,
-        num_workers=2,
-    )
+    pruning_callback = PyTorchLightningPruningCallback(trial, monitor="val_loss")
+    logger = TensorBoardLogger(save_dir="logs", name="optuna_trial_{trial.number}")
 
-    model, new_config = define_model_and_config(trial)
-    accuracy = train(
-        model=model,
-        device=device,
-        training_dataset=training_dataset,
-        validation_dataset=validation_dataset,
-        training_dataloader=training_dataloader,
-        validation_dataloader=validation_dataloader,
-        config=new_config,
-        trial=trial,
+    callbacks = [pruning_callback, early_stop_callback]
+    trainer = L.Trainer(
+        max_epochs=new_config.num_epochs,
+        callbacks=callbacks,
+        accelerator="auto",
+        devices="auto",
+        precision=("16-mixed" if get_device().type == "cuda" else "32"),
+        gradient_clip_val=1.0,
+        log_every_n_steps=10,
+        logger=logger,
+        limit_train_batches=new_config.batch_limit if new_config.batch_limit else 1.0,
+        limit_val_batches=(
+            max(int(new_config.batch_limit * 0.1), 2) if new_config.batch_limit else 1.0
+        ),
+        fast_dev_run=False,
     )
+    trainer.fit(model, data_module)
 
-    return accuracy
+    return trainer.callback_metrics["val_loss"].item()
 
 
 if __name__ == "__main__":
     setup_logging()
     freeze_support()
-    study = optuna.create_study(direction="maximize")
+    study = optuna.create_study(direction="minimize")
     study.optimize(objective, n_trials=100, timeout=6000)
 
     failed_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.FAIL])
     pruned_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.COMPLETE])
 
-    logger.info("Study statistics: ")
-    logger.info("Number of finished trials: %d", len(study.trials))
-    logger.info("Number of failed trials: %d", len(failed_trials))
-    logger.info("Number of pruned trials: %d", len(pruned_trials))
-    logger.info("Number of complete trials: %d", len(complete_trials))
+    stdout_logger.info("Study statistics: ")
+    stdout_logger.info("Number of finished trials: %d", len(study.trials))
+    stdout_logger.info("Number of failed trials: %d", len(failed_trials))
+    stdout_logger.info("Number of pruned trials: %d", len(pruned_trials))
+    stdout_logger.info("Number of complete trials: %d", len(complete_trials))
 
-    logger.info("Best trial:")
+    stdout_logger.info("Best trial:")
     trial = study.best_trial
 
-    logger.info("Value: %s", str(trial.value))
+    stdout_logger.info("Value: %s", str(trial.value))
 
-    logger.info("Params: ")
+    stdout_logger.info("Params: ")
     for key, value in trial.params.items():
-        logger.info("    %s: %s", key, value)
+        stdout_logger.info("    %s: %s", key, value)
 
-    logger.info("All trials: %s", str(study.trials))
+    stdout_logger.info("All trials: %s", str(study.trials))
