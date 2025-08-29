@@ -19,13 +19,14 @@ def collate_fn(batch):
         batch_first=True,
         padding_value=special_tokens_to_embeddings["<|pad|>"],
     )
+
     return input_ids, target_ids
 
 
 class ChessDataModule(L.LightningDataModule):
     def __init__(self, config):
         super().__init__()
-        self.config = config
+        self.save_hyperparameters(config)
         self.batch_size = config.batch_size
 
     def setup(self, stage=None):
@@ -33,8 +34,12 @@ class ChessDataModule(L.LightningDataModule):
             training_files = list_npy_files("data/training")
             validation_files = list_npy_files("data/validation")
 
-            self.train_dataset = NpyDataset(training_files)
-            self.val_dataset = NpyDataset(validation_files)
+            self.train_dataset = NpyDataset(
+                training_files, max_seq_len=self.hparams.max_seq_len
+            )
+            self.val_dataset = NpyDataset(
+                validation_files, max_seq_len=self.hparams.max_seq_len
+            )
 
     def train_dataloader(self):
         return DataLoader(

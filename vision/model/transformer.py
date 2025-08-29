@@ -37,11 +37,11 @@ class PreNormTransformerLayer(nn.Module):
 class ChessModel(L.LightningModule):
     def __init__(self, config):
         super().__init__()
-        self.config = config
+        # self.config = config
         self.save_hyperparameters(config)
 
-        input_dim = config.emb_dim
-        hidden_dim = config.hidden_dim
+        input_dim = self.hparams.emb_dim
+        hidden_dim = self.hparams.hidden_dim
 
         ff_config = {
             "gate_proj": nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU()),
@@ -49,29 +49,44 @@ class ChessModel(L.LightningModule):
         }
 
         self.token_embedding = nn.Embedding(
-            config.vocabulary_size, config.emb_dim, padding_idx=0
+            self.hparams.vocabulary_size, self.hparams.emb_dim, padding_idx=0
         )
-        self.positional_embedding = nn.Embedding(config.max_seq_len, config.emb_dim)
+        self.positional_embedding = nn.Embedding(
+            self.hparams.max_seq_len, self.hparams.emb_dim
+        )
 
         self.transformer_blocks = nn.ModuleList(
             [
                 PreNormTransformerLayer(
                     attn=nn.MultiheadAttention(
-                        embed_dim=config.emb_dim,
-                        num_heads=config.num_heads,
-                        dropout=config.attn_dropout,
-                        bias=config.qkv_bias,
+                        embed_dim=self.hparams.emb_dim,
+                        num_heads=self.hparams.num_heads,
+                        dropout=self.hparams.attn_dropout,
+                        bias=self.hparams.qkv_bias,
                         batch_first=True,
                     ),
                     mlp=FeedForward(**ff_config),
-                    dim=config.emb_dim,
+                    dim=self.hparams.emb_dim,
                 )
-                for _ in range(config.transformer_layers)
+                for _ in range(self.hparams.transformer_layers)
             ]
         )
 
-        self.final_norm = RMSNorm(config.emb_dim)
-        self.out_head = nn.Linear(config.emb_dim, config.vocabulary_size, bias=False)
+        self.final_norm = RMSNorm(self.hparams.emb_dim)
+        self.out_head = nn.Linear(
+            self.hparams.emb_dim, self.hparams.vocabulary_size, bias=False
+        )
+
+    # def on_fit_start(self):
+    #     """Ensure all model components are on the correct device when training starts"""
+    #     # This helps with MPS device issues
+    #     device = self.device
+    #     self.token_embedding = self.token_embedding.to(device)
+    #     self.positional_embedding = self.positional_embedding.to(device)
+    #     self.final_norm = self.final_norm.to(device)
+    #     self.out_head = self.out_head.to(device)
+    #     for block in self.transformer_blocks:
+    #         block.to(device)
 
     def forward(self, idx):
         _, seq_len = idx.shape
@@ -88,6 +103,17 @@ class ChessModel(L.LightningModule):
 
     def _shared_step(self, batch, batch_idx, stage):
         input_ids, target_ids = batch
+
+        # Ensure tensors are on the correct device and contiguous
+        input_ids = input_ids.to(self.device).contiguous()
+        target_ids = target_ids.to(self.device).contiguous()
+
+        # # Should be no unknown inputs in the data
+        # # TODO: Figure out how to do this more efficiently in a single check
+        # if special_tokens_to_embeddings["<|unk|>"] in input_ids:
+        #     return None
+        # if special_tokens_to_embeddings["<|unk|>"] in target_ids:
+        #     return None
 
         output = self(input_ids)
         output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
@@ -157,7 +183,7 @@ class ChessModel(L.LightningModule):
         return result
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.config.learning_rate)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.learning_rate)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.01)
         return {
             "optimizer": optimizer,
