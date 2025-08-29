@@ -43,7 +43,7 @@ def main(config):
         devices="auto",
         precision=("16-mixed" if get_device().type == "cuda" else "32"),
         gradient_clip_val=1.0,
-        log_every_n_steps=10,
+        log_every_n_steps=50,
         logger=logger,
         limit_train_batches=config.batch_limit if config.batch_limit else 1.0,
         limit_val_batches=(

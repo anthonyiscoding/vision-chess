@@ -31,15 +31,15 @@ def objective(trial: ot.Trial):
     L.seed_everything(123)
     new_config = copy.deepcopy(config)
 
-    new_config.batch_size = trial.suggest_int("batch_size", 2, 24, step=2)
-    new_config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048, 4096])
-    new_config.hidden_dim = new_config.emb_dim * 2
-    new_config.head_dim = new_config.emb_dim // new_config.num_heads
+    # new_config.batch_size = trial.suggest_int("batch_size", 2, 24, step=2)
+    # new_config.emb_dim = trial.suggest_categorical("emb_dim", [768, 1024, 2048, 4096])
+    # new_config.hidden_dim = new_config.emb_dim * 2
+    # new_config.head_dim = new_config.emb_dim // new_config.num_heads
     new_config.learning_rate = trial.suggest_float(
         "learning_rate", 3e-5, 1e-3, log=True
     )
     new_config.transformer_layers = trial.suggest_int(
-        "transformer_layers", 2, 12, step=2
+        "transformer_layers", 2, 4, step=1
     )
     # config.qkv_bias = trial.suggest_categorical("qkv_bias", [True, False])
 
@@ -47,11 +47,11 @@ def objective(trial: ot.Trial):
     data_module = ChessDataModule(new_config)
 
     early_stop_callback = EarlyStopping(
-        monitor="val_loss", patience=5, verbose=False, mode="min"
+        monitor="val_loss", patience=2, verbose=False, mode="min"
     )
 
     pruning_callback = PyTorchLightningPruningCallback(trial, monitor="val_loss")
-    logger = TensorBoardLogger(save_dir="logs", name="optuna_trial_{trial.number}")
+    logger = TensorBoardLogger(save_dir="logs", name=f"optuna_trial_{trial.number}")
 
     callbacks = [pruning_callback, early_stop_callback]
     trainer = L.Trainer(
@@ -61,7 +61,7 @@ def objective(trial: ot.Trial):
         devices="auto",
         precision=("16-mixed" if get_device().type == "cuda" else "32"),
         gradient_clip_val=1.0,
-        log_every_n_steps=10,
+        log_every_n_steps=50,
         logger=logger,
         limit_train_batches=new_config.batch_limit if new_config.batch_limit else 1.0,
         limit_val_batches=(
@@ -78,7 +78,8 @@ if __name__ == "__main__":
     setup_logging()
     freeze_support()
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=100, timeout=6000)
+    hours = 3
+    study.optimize(objective, n_trials=100, timeout=60 * 60 * hours)
 
     failed_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.FAIL])
     pruned_trials = study.get_trials(deepcopy=False, states=[ot.TrialState.PRUNED])

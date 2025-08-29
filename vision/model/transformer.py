@@ -29,8 +29,8 @@ class PreNormTransformerLayer(nn.Module):
         normed_x = self.norm1(x)
         # PyTorch MultiheadAttention expects (query, key, value) and returns (output, weights)
         attn_output, _ = self.attn(normed_x, normed_x, normed_x)
-        x = x + (attn_output / (2**0.5))
-        x = x + (self.mlp(self.norm2(x)) / (2**0.5))
+        x = x + attn_output
+        x = x + self.mlp(self.norm2(x))
         return x
 
 
@@ -130,7 +130,9 @@ class ChessModel(L.LightningModule):
             # TODO: Determine if still needed and log this if so
             return None
 
-        loss = nn.functional.cross_entropy(output[mask], target[mask])
+        loss = nn.functional.cross_entropy(
+            output[mask], target[mask], label_smoothing=0.05
+        )
 
         if torch.isnan(loss) or torch.isinf(loss):
             self.log(f"{stage}_loss_exploded", loss)
@@ -183,8 +185,13 @@ class ChessModel(L.LightningModule):
         return result
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.learning_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.01)
+        optimizer = torch.optim.AdamW(
+            self.parameters(),
+            lr=self.hparams.learning_rate,
+            weight_decay=0.01,
+            betas=(0.9, 0.95),
+        )
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
@@ -192,6 +199,11 @@ class ChessModel(L.LightningModule):
                 "interval": "epoch",
             },
         }
+
+    def on_before_optimizer_step(self, optimizer):
+        self.clip_gradients(
+            optimizer, gradient_clip_val=1.0, gradient_clip_algorithm="norm"
+        )
 
     # TODO: Probably not needed
     # def on_save_checkpoint(self, checkpoint):
