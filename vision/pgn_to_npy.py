@@ -68,23 +68,28 @@ def read_npy(file, n: str | bool):
 
 def pgn_to_npy(input, batch_size, output_dir):
     pgn_files = list_pgn_files(input)
-
+    total_games = 0
     for file in pgn_files:
         f = str(file)
         reader = read_pgn(f)
-        move_list = [m for m in list(reader) if m is not None]
+        game_list = [m for m in list(reader) if m is not None]
+        game_list_length = len(game_list)
+        print(f"Processing: {file.name} with {game_list_length} games")
 
-        for i in range(0, len(move_list), batch_size):
+        for i in range(0, game_list_length, batch_size):
             start = i
-            end = min(i + batch_size, len(move_list)) - 1
+            end = min(i + batch_size, game_list_length) - 1
             try:
                 write_np(
-                    move_list[start:end],
+                    game_list[start:end],
                     f"{file.stem}-{start}-{end}",
                     output_dir,
                 )
             except StopIteration:
                 break
+        total_games += game_list_length
+
+    return total_games
 
 
 def list_pgn_files(input):
@@ -135,4 +140,5 @@ if __name__ == "__main__":
         read_npy(args.input, args.read)
 
     if not args.read:
-        pgn_to_npy(args.input, args.batch_size, args.output_dir)
+        total_games = pgn_to_npy(args.input, args.batch_size, args.output_dir)
+        print(f"Processed {total_games} total games")
