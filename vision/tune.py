@@ -1,3 +1,4 @@
+import argparse
 import copy
 import logging
 import sys
@@ -13,6 +14,14 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from optuna.integration import PyTorchLightningPruningCallback
 
 from vision.utils import get_device
+
+parser = argparse.ArgumentParser(description="Run studies to tune this model")
+parser.add_argument(
+    "study_name",
+    default="",
+    help="Name the study, appears as part of the name in logs (use a short name)",
+)
+args = parser.parse_args()
 
 
 def setup_logging():
@@ -51,7 +60,9 @@ def objective(trial: ot.Trial):
     )
 
     pruning_callback = PyTorchLightningPruningCallback(trial, monitor="val_loss")
-    logger = TensorBoardLogger(save_dir="logs", name=f"optuna_trial_{trial.number}")
+    logger = TensorBoardLogger(
+        save_dir="logs", name=f"optuna_trial_{args.study_name}-{trial.number}"
+    )
 
     callbacks = [pruning_callback, early_stop_callback]
     trainer = L.Trainer(
