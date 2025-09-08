@@ -48,10 +48,14 @@ class ChessModel(L.LightningModule):
         }
 
         self.token_embedding = nn.Embedding(
-            self.hparams.vocabulary_size, self.hparams.emb_dim, padding_idx=0
+            self.hparams.vocabulary_size,
+            self.hparams.emb_dim,
+            padding_idx=special_tokens_to_embeddings["<|pad|>"],
         )
         self.positional_embedding = nn.Embedding(
-            self.hparams.max_seq_len, self.hparams.emb_dim
+            self.hparams.vocabulary_size,
+            self.hparams.emb_dim,
+            padding_idx=special_tokens_to_embeddings["<|pad|>"],
         )
 
         self.transformer_blocks = nn.ModuleList(
@@ -75,17 +79,6 @@ class ChessModel(L.LightningModule):
         self.out_head = nn.Linear(
             self.hparams.emb_dim, self.hparams.vocabulary_size, bias=False
         )
-
-    # def on_fit_start(self):
-    #     """Ensure all model components are on the correct device when training starts"""
-    #     # This helps with MPS device issues
-    #     device = self.device
-    #     self.token_embedding = self.token_embedding.to(device)
-    #     self.positional_embedding = self.positional_embedding.to(device)
-    #     self.final_norm = self.final_norm.to(device)
-    #     self.out_head = self.out_head.to(device)
-    #     for block in self.transformer_blocks:
-    #         block.to(device)
 
     def forward(self, idx):
         _, seq_len = idx.shape
