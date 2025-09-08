@@ -56,19 +56,18 @@ def write_np(
     np.save(f"{output_dir}/validation/{file_stem}.npy", validation_array)
 
 
-def read_npy(file, limit: str | bool):
-    move_collection: np = np.load(file)
+def read_npy(file, limit: int | None = None):
+    move_collection: np.ndarray = np.load(file)
 
-    # TODO: Double check this logic, seems unnecessary
-    if limit is True:
-        l = len(move_collection)
-    else:
+    if limit:
         l = min(len(move_collection), limit)
+    else:
+        l = len(move_collection)
 
-    rows = move_collection.files[:l]
+    rows = move_collection[:l]
 
     for r in rows:
-        print(move_collection[r])
+        print(r)
 
 
 def pgn_to_npy(input, batch_size, output_dir):
