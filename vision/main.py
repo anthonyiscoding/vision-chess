@@ -1,5 +1,6 @@
 from multiprocessing import freeze_support
 import lightning as L
+from datetime import datetime
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import TensorBoardLogger
 from vision.model import transformer as t
@@ -12,6 +13,7 @@ def main(config):
     data_module = ChessDataModule(config)
     model = t.ChessModel(config)
     logger = TensorBoardLogger(save_dir="logs", name=config.env)
+    start_time = datetime.now()
 
     callbacks = []
 
@@ -19,7 +21,7 @@ def main(config):
         # Lightning checkpoint callback - saves .ckpt files
         checkpoint_callback = ModelCheckpoint(
             dirpath="models/",
-            filename="model-{epoch:02d}-{val_loss:.3f}",
+            filename=f"model-{start_time:%Y-%m-%d %H:%M:%S}-{{epoch:02d}}-{{val_loss:.3f}}",
             monitor="val_loss",
             mode="min",
             save_top_k=2,
