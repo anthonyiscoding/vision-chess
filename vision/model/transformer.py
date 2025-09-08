@@ -32,7 +32,7 @@ class ChessModel(L.LightningModule):
         hidden_dim = self.hparams["hidden_dim"]
 
         ff_config = {
-            "gate_proj": nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU()),
+            "gate_proj": nn.Linear(input_dim, hidden_dim),
             "down_proj": nn.Linear(hidden_dim, input_dim),
         }
 
