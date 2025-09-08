@@ -53,9 +53,8 @@ class ChessModel(L.LightningModule):
             padding_idx=special_tokens_to_embeddings["<|pad|>"],
         )
         self.positional_embedding = nn.Embedding(
-            self.hparams.vocabulary_size,
+            self.hparams.max_seq_len,
             self.hparams.emb_dim,
-            padding_idx=special_tokens_to_embeddings["<|pad|>"],
         )
 
         self.transformer_blocks = nn.ModuleList(
