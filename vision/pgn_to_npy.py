@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 import chess.pgn
 import numpy as np
+from tqdm import tqdm
 
 
 def read_pgn(file: str):
@@ -40,7 +41,7 @@ def write_np(
     for a in move_collection:
         padded_array.append(
             np.pad(
-                array=a,
+                array=np.array(a, dtype=object),
                 pad_width=(0, len(longest_array) - len(a)),
                 mode="constant",
                 constant_values="<|pad|>",
@@ -73,26 +74,32 @@ def read_npy(file, limit: int | None = None):
 def pgn_to_npy(input, batch_size, output_dir):
     pgn_files = list_pgn_files(input)
     total_games = 0
-    for file in pgn_files:
-        f = str(file)
-        reader = read_pgn(f)
-        game_list = [m for m in list(reader) if m is not None]
-        game_list_length = len(game_list)
-        print(f"Processing: {file.name} with {game_list_length} games")
 
-        for i in range(0, game_list_length, batch_size):
-            start = i
-            end = min(i + batch_size, game_list_length) - 1
-            try:
-                write_np(
-                    game_list[start:end],
-                    f"{file.stem}-{start}-{end}",
-                    output_dir,
-                )
-            except StopIteration:
-                break
+    with tqdm(pgn_files, desc="Processing PGN files", unit="file") as progress_bar:
+        for file in progress_bar:
+            f = str(file)
+            reader = read_pgn(f)
+            game_list = [m for m in list(reader) if m is not None]
+            game_list_length = len(game_list)
 
-        total_games += game_list_length
+            progress_bar.set_description(
+                f"Processing {file.name} ({game_list_length} games)"
+            )
+
+            for i in range(0, game_list_length, batch_size):
+                start = i
+                end = min(i + batch_size, game_list_length) - 1
+                try:
+                    write_np(
+                        game_list[start:end],
+                        f"{file.stem}-{start}-{end}",
+                        output_dir,
+                    )
+                except StopIteration:
+                    break
+
+            total_games += game_list_length
+            progress_bar.set_postfix({"Total games:": total_games})
 
     return total_games
 
