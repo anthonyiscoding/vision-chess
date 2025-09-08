@@ -39,8 +39,8 @@ class ChessModel(L.LightningModule):
         super().__init__()
         self.save_hyperparameters(config)
 
-        input_dim = self.hparams.emb_dim
-        hidden_dim = self.hparams.hidden_dim
+        input_dim = self.hparams["emb_dim"]
+        hidden_dim = self.hparams["hidden_dim"]
 
         ff_config = {
             "gate_proj": nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU()),
@@ -48,35 +48,35 @@ class ChessModel(L.LightningModule):
         }
 
         self.token_embedding = nn.Embedding(
-            self.hparams.vocabulary_size,
-            self.hparams.emb_dim,
+            self.hparams["vocabulary_size"],
+            self.hparams["emb_dim"],
             padding_idx=special_tokens_to_embeddings["<|pad|>"],
         )
         self.positional_embedding = nn.Embedding(
-            self.hparams.max_seq_len,
-            self.hparams.emb_dim,
+            self.hparams["max_seq_len"],
+            self.hparams["emb_dim"],
         )
 
         self.transformer_blocks = nn.ModuleList(
             [
                 PreNormTransformerLayer(
                     attn=nn.MultiheadAttention(
-                        embed_dim=self.hparams.emb_dim,
-                        num_heads=self.hparams.num_heads,
-                        dropout=self.hparams.attn_dropout,
-                        bias=self.hparams.qkv_bias,
+                        embed_dim=self.hparams["emb_dim"],
+                        num_heads=self.hparams["num_heads"],
+                        dropout=self.hparams["attn_dropout"],
+                        bias=self.hparams["qkv_bias"],
                         batch_first=True,
                     ),
                     mlp=FeedForward(**ff_config),
-                    dim=self.hparams.emb_dim,
+                    dim=self.hparams["emb_dim"],
                 )
-                for _ in range(self.hparams.transformer_layers)
+                for _ in range(self.hparams["transformer_layers"])
             ]
         )
 
-        self.final_norm = RMSNorm(self.hparams.emb_dim)
+        self.final_norm = RMSNorm(self.hparams["emb_dim"])
         self.out_head = nn.Linear(
-            self.hparams.emb_dim, self.hparams.vocabulary_size, bias=False
+            self.hparams["emb_dim"], self.hparams["vocabulary_size"], bias=False
         )
 
     def forward(self, idx):
@@ -178,7 +178,7 @@ class ChessModel(L.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.parameters(),
-            lr=self.hparams.learning_rate,
+            lr=self.hparams["learning_rate"],
             weight_decay=0.01,
             betas=(0.9, 0.95),
         )
