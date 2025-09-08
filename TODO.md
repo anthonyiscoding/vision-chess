@@ -1,9 +1,9 @@
 - [ ] During development I stopped doing the sliding window for training so it really wants to play e2e4 even when that's not a legal move
-- [ ] I clearly need to do some more data cleaning (ie. "<|unk|>" tokens just shouldn't happen)
+- [x] I clearly need to do some more data cleaning (ie. "<|unk|>" tokens just shouldn't happen)
 - [ ] The training data is all modern GMs so it wants to play the same openings
 - [ ] The encoding scheme might not be that great
 - [ ] I need to actually allow it to work as a chess bot so I can do actual testing
-- [ ] Padding is also an issue, batches should all get padded to longest length sequence but they all get padded to max sequence length instead
-- [ ] If dataset is too small for model's size then it won't learn effectively, figure out the right balance
-    - [ ] Google Chinchilla research says 1 param = 20-25 tokens
+- [x] Padding is also an issue, batches should all get padded to longest length sequence but they all get padded to max sequence length instead
+- [x] If dataset is too small for model's size then it won't learn effectively, figure out the right balance
+    - [x] Google Chinchilla research says 1 param = 20-25 tokens
 - [ ] Remove the impossible tokens (ex. a1a1) from the tokenization scheme
