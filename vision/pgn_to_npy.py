@@ -14,7 +14,9 @@ def read_pgn(file: str):
         while game:
             try:
                 game = chess.pgn.read_game(f)
-                moves = [m.uci() for m in game.mainline_moves()]
+                moves = ["<|startofgame|>"]
+                moves.extend(m.uci() for m in game.mainline_moves())
+                moves.append("<|endofgame|>")
                 yield moves
             except:
                 continue
@@ -36,10 +38,10 @@ def write_np(
     for a in move_collection:
         padded_array.append(
             np.pad(
-                a,
-                (0, len(longest_array) - len(a)),
+                array=a,
+                pad_width=(0, len(longest_array) - len(a)),
                 mode="constant",
-                constant_values=None,
+                constant_values="<|pad|>",
             )
         )
 
@@ -52,18 +54,19 @@ def write_np(
     np.save(f"{output_dir}/validation/{file_stem}.npy", validation_array)
 
 
-def read_npy(file, n: str | bool):
+def read_npy(file, limit: str | bool):
     move_collection: np = np.load(file)
 
-    if n is True:
-        limit = len(move_collection)
+    # TODO: Double check this logic, seems unnecessary
+    if limit is True:
+        l = len(move_collection)
     else:
-        limit = min(len(move_collection), n)
+        l = min(len(move_collection), limit)
 
-    keys = move_collection.files[:limit]
+    rows = move_collection.files[:l]
 
-    for k in keys:
-        print(move_collection[k])
+    for r in rows:
+        print(move_collection[r])
 
 
 def pgn_to_npy(input, batch_size, output_dir):
