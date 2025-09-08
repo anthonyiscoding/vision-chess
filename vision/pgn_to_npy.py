@@ -1,7 +1,7 @@
 import argparse
 from functools import reduce
 import random
-import math
+import sys
 from pathlib import Path
 import chess.pgn
 import numpy as np
@@ -18,6 +18,8 @@ def read_pgn(file: str):
                 moves.extend(m.uci() for m in game.mainline_moves())
                 moves.append("<|endofgame|>")
                 yield moves
+            except KeyboardInterrupt:
+                sys.exit(0)
             except:
                 continue
 
@@ -90,6 +92,7 @@ def pgn_to_npy(input, batch_size, output_dir):
                 )
             except StopIteration:
                 break
+
         total_games += game_list_length
 
     return total_games
