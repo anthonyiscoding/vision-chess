@@ -34,6 +34,7 @@ class ChessModel(L.LightningModule):
         ff_config = {
             "gate_proj": nn.Linear(input_dim, hidden_dim),
             "down_proj": nn.Linear(hidden_dim, input_dim),
+            "up_proj": nn.Linear(input_dim, hidden_dim),
         }
 
         self.token_embedding = nn.Embedding(
