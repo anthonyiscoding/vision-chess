@@ -49,7 +49,7 @@ def main(config):
         logger=logger,
         limit_train_batches=config.batch_limit if config.batch_limit else 1.0,
         limit_val_batches=(
-            max(int(config.batch_limit * 0.1), 2) if config.batch_limit else 1.0
+            int(config.batch_limit * 0.1) if config.batch_limit else 0.1
         ),
         fast_dev_run=config.fast_dev_run if config.fast_dev_run else False,
     )
