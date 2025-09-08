@@ -10,7 +10,7 @@ def setup_hook(config):
         data["num_kv_heads"] = config["num_heads"]
 
     if "hidden_dim" not in config:
-        data["hidden_dim"] = config["emb_dim"] * 2
+        data["hidden_dim"] = int(config["emb_dim"] * 2.667)
 
     if "head_dim" not in config:
         data["head_dim"] = config["emb_dim"] // config["num_heads"]
