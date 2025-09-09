@@ -33,8 +33,8 @@ class ChessModel(L.LightningModule):
 
         ff_config = {
             "gate_proj": nn.Linear(input_dim, hidden_dim),
-            "down_proj": nn.Linear(hidden_dim, input_dim),
             "up_proj": nn.Linear(input_dim, hidden_dim),
+            "down_proj": nn.Linear(hidden_dim, input_dim),
         }
 
         self.token_embedding = nn.Embedding(
@@ -126,12 +126,17 @@ class ChessModel(L.LightningModule):
         accuracy = correct / total if total > 0 else 0.0
         perplexity = torch.exp(loss)
 
+        prog_bar_display = {
+            "train": {"loss": True, "perplexity": True, "accuracy": False},
+            "val": {"loss": False, "perplexity": False, "accuracy": True},
+        }
+
         self.log(
             f"{stage}_loss",
             loss,
             on_step=True,
             on_epoch=True,
-            prog_bar=True,
+            prog_bar=prog_bar_display[stage]["loss"],
             logger=True,
         )
         self.log(
@@ -139,7 +144,7 @@ class ChessModel(L.LightningModule):
             perplexity,
             on_step=True,
             on_epoch=True,
-            prog_bar=True,
+            prog_bar=prog_bar_display[stage]["perplexity"],
             logger=True,
         )
         self.log(
@@ -147,7 +152,7 @@ class ChessModel(L.LightningModule):
             accuracy,
             on_step=True,
             on_epoch=True,
-            prog_bar=True,
+            prog_bar=prog_bar_display[stage]["accuracy"],
             logger=True,
         )
 
