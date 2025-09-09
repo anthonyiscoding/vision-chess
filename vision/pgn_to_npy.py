@@ -6,9 +6,10 @@ from pathlib import Path
 import chess.pgn
 import numpy as np
 from tqdm import tqdm
+import os
 
 
-def read_pgn(file: str):
+def read_pgn_any(file: str):
     with open(file, mode="r") as f:
         game = True
 
@@ -18,7 +19,8 @@ def read_pgn(file: str):
                 moves = ["<|startofgame|>"]
                 moves.extend(m.uci() for m in game.mainline_moves())
                 moves.append("<|endofgame|>")
-                yield moves
+                game_list = [m for m in moves if m is not None]
+                yield game_list
             except KeyboardInterrupt:
                 sys.exit(0)
             except:
@@ -30,6 +32,11 @@ def read_pgn(file: str):
 def write_np(
     move_collection, file_stem, output_dir, training_data_ratio=0.9, shuffle=True
 ):
+    training_dir = os.path.join(output_dir, "training")
+    validation_dir = os.path.join(output_dir, "validation")
+    os.makedirs(training_dir, exist_ok=True)
+    os.makedirs(validation_dir, exist_ok=True)
+
     if shuffle:
         random.shuffle(move_collection)
 
@@ -78,8 +85,8 @@ def pgn_to_npy(input, batch_size, output_dir):
     with tqdm(pgn_files, desc="Processing PGN files", unit="file") as progress_bar:
         for file in progress_bar:
             f = str(file)
-            reader = read_pgn(f)
-            game_list = [m for m in list(reader) if m is not None]
+            reader = read_pgn_any(f)
+            game_list = list(reader)
             game_list_length = len(game_list)
 
             progress_bar.set_description(
@@ -114,6 +121,8 @@ def list_npy_files(input):
 
 def _list_files(input, file_glob):
     base_path = Path(input)
+    if base_path.is_file():
+        return [base_path]
     files = [f for f in base_path.glob(file_glob) if f.is_file()]
     return files
 
@@ -144,13 +153,15 @@ if __name__ == "__main__":
         help="Print the contents of npz file to stdout. If an integer is provided it only prints the first n records.",
     )
     args = parser.parse_args()
+    input = Path(args.input)
+    output_dir = Path(args.output_dir)
 
-    if args.read and Path(args.input).is_dir():
+    if args.read and input.is_dir():
         print("Input must be a single file when --read is provided")
 
     if args.read:
-        read_npy(args.input, args.read)
+        read_npy(input, args.read)
 
     if not args.read:
-        total_games = pgn_to_npy(args.input, args.batch_size, args.output_dir)
+        total_games = pgn_to_npy(input, args.batch_size, output_dir)
         print(f"Processed {total_games} total games")
