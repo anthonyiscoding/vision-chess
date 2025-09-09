@@ -48,7 +48,7 @@ def write_np(
     for a in move_collection:
         padded_array.append(
             np.pad(
-                array=np.array(a, dtype=object),
+                array=a,
                 pad_width=(0, len(longest_array) - len(a)),
                 mode="constant",
                 constant_values="<|pad|>",
