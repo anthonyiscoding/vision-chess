@@ -1,12 +1,19 @@
 <img src="./extra/vision-logo.png" alt="Vision Chess Logo" width=300 style="display:block; margin: auto; width: 50%"></img>
 
 # About
-Vision is a small in-progress model designed to predict the next move in a chess game using a GPT-like model.
+Vision is a small in-progress model designed to predict the next move in a chess game using a Transformer model. Most importantly the end goal is to train a bot that plays convincingly like a human.
 
 It's a hobby project and not to be taken too seriously. For more proven neural network architectures check out [pytorch-nnue](https://official-stockfish.github.io/docs/nnue-pytorch-wiki/docs/nnue.html). 
 
-# Installation
-Installation can be done with poetry:
+# Prerequisites
+Before you proceed make sure you have [poetry installed](https://python-poetry.org/docs/#installation).
+
+You might also want to get some PGN files, [lichess provides monthly snapshots](https://database.lichess.org/).
+
+These snapshots are quite large (~200GB per month uncompressed) so you may want a tool like [pgn-extract](https://www.cs.kent.ac.uk/people/staff/djb/pgn-extract/). It's very fast and very helpful for filtering these files. Here's a [blog](https://bigeatie.com/posts/pgn-extract/) showing some usage examples for pgn-extract. 
+
+# Setup
+Setup is simple:
 
 ```bash
 poetry install
@@ -20,7 +27,7 @@ poetry install
     ```
     (Note: You can place the pgn files where you want but the next step expects there to be a `training` and `validation` directory within the output directory you specify)
 
-2. Then process these into numpy arrays using `pgn_to_npy.py`:
+2. Then process these into numpy arrays using `pgn_to_npy.py`. This example uses `poetry` but use whichever package/environment manager you like.
 
     ```bash
     $(poetry env activate)
@@ -35,20 +42,27 @@ poetry install
     python vision/main.py
     ```
 
-4. The model will run and automatically save any epochs that perform better than the last best epoch. You should see output like:
+4. The model will run and automatically save any epochs that perform better than the last best epoch. You should see [pytorch-lightning](https://lightning.ai/) output like:
 
-    ```bash
-    Training on approximately 9963 batches.
-    Validating on approximately 1109 batches.
-    Batch size: 4
-    --- Epoch 0 ---
-    Training Epoch: 0 | Batch: 0 | Sample input: tensor([1674, 2942], device='mps:0') | Running Loss: 8.81575 | Running Perplexity: 6739.52930
-    Training Epoch: 0 | Batch: 10 | Sample input: tensor([1739, 2291], device='mps:0') | Running Loss: 5.41107 | Running Perplexity: 223.87140
-    Training Epoch: 0 | Batch: 20 | Sample input: tensor([1804, 2738], device='mps:0') | Running Loss: 4.52343 | Running Perplexity: 92.15147
-    Training Epoch: 0 | Batch: 30 | Sample input: tensor([1804, 2226], device='mps:0') | Running Loss: 3.94177 | Running Perplexity: 51.50982
-    Training Epoch: 0 | Batch: 40 | Sample input: tensor([1804, 2356], device='mps:0') | Running Loss: 3.67486 | Running Perplexity: 39.44297
+    ```text
+        | Name                 | Type       | Params | Mode 
+        ------------------------------------------------------------
+        0 | token_embedding      | Embedding  | 2.1 M  | train
+        1 | positional_embedding | Embedding  | 25.6 K | train
+        2 | transformer_blocks   | ModuleList | 4.2 M  | train
+        3 | final_norm           | RMSNorm    | 512    | train
+        4 | out_head             | Linear     | 2.1 M  | train
+        ------------------------------------------------------------
+        8.4 M     Trainable params
+        0         Non-trainable params
+        8.4 M     Total params
+        33.711    Total estimated model params size (MB)
+        21        Modules in train mode
+        0         Modules in eval mode
+        Sanity Checking: |            | 0/? [00:00<?, ?it/s]
+        Epoch 0: 100%|████████████| 11391/11391 [1:21:14<00:00,  2.34it/s, v_num=30, train_loss_step=0.707, train_perplexity_step=2.030, val_accuracy_step=0.983]
     ```
 
 # Caveats / Limitations
 
-The current embedding scheme is based on UCI move instructions from the start of a standard chess game. As such it likely won't be any good at playing Chess variants like Chess960. This embedding scheme also makes dropout ineffective. It may change in the future as the model evolves.
+The current tokenization scheme is based on UCI move instructions from the start of a standard chess game. As such it likely won't be any good at playing Chess variants like Chess960. This tokenization scheme also makes dropout ineffective. It may change in the future as the model evolves.
