@@ -127,8 +127,8 @@ class ChessModel(L.LightningModule):
         perplexity = torch.exp(loss)
 
         prog_bar_display = {
-            "train": {"loss": True, "perplexity": True, "accuracy": False},
-            "val": {"loss": False, "perplexity": False, "accuracy": True},
+            "train": {"loss": True, "perplexity": False, "accuracy": False},
+            "val": {"loss": True, "perplexity": False, "accuracy": False},
         }
 
         self.log(
@@ -177,7 +177,9 @@ class ChessModel(L.LightningModule):
             weight_decay=0.01,
             betas=(0.9, 0.95),
         )
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8)
+        scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=1.0, end_factor=0.1, total_iters=8
+        )
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
