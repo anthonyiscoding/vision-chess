@@ -45,22 +45,22 @@ poetry install
 4. The model will run and automatically save any epochs that perform better than the last best epoch. You should see [pytorch-lightning](https://lightning.ai/) output like:
 
     ```text
-        | Name                 | Type       | Params | Mode 
-        ------------------------------------------------------------
-        0 | token_embedding      | Embedding  | 2.1 M  | train
-        1 | positional_embedding | Embedding  | 25.6 K | train
-        2 | transformer_blocks   | ModuleList | 4.2 M  | train
-        3 | final_norm           | RMSNorm    | 512    | train
-        4 | out_head             | Linear     | 2.1 M  | train
-        ------------------------------------------------------------
-        8.4 M     Trainable params
-        0         Non-trainable params
-        8.4 M     Total params
-        33.711    Total estimated model params size (MB)
-        21        Modules in train mode
-        0         Modules in eval mode
-        Sanity Checking: |            | 0/? [00:00<?, ?it/s]
-        Epoch 0: 100%|████████████| 11391/11391 [1:21:14<00:00,  2.34it/s, v_num=30, train_loss_step=0.707, train_perplexity_step=2.030, val_accuracy_step=0.983]
+    | Name                 | Type       | Params | Mode 
+    ------------------------------------------------------------
+    0 | token_embedding      | Embedding  | 2.1 M  | train
+    1 | positional_embedding | Embedding  | 25.6 K | train
+    2 | transformer_blocks   | ModuleList | 4.2 M  | train
+    3 | final_norm           | RMSNorm    | 512    | train
+    4 | out_head             | Linear     | 2.1 M  | train
+    ------------------------------------------------------------
+    8.4 M     Trainable params
+    0         Non-trainable params
+    8.4 M     Total params
+    33.711    Total estimated model params size (MB)
+    21        Modules in train mode
+    0         Modules in eval mode
+    Sanity Checking: |            | 0/? [00:00<?, ?it/s]
+    Epoch 0: 100%|████████████| 11391/11391 [1:21:14<00:00,  2.34it/s, v_num=30, train_loss_step=0.707, train_perplexity_step=2.030, val_accuracy_step=0.983]
     ```
 
 # Caveats / Limitations
