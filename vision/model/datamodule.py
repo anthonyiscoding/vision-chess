@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 from vision.model.data import NpyDataset
 from vision.model.tokenizer import special_tokens_to_embeddings
-from vision.pgn_to_npy import list_npy_files
+from vision.pgn_to_npy import PgnProcessor
 
 
 def collate_fn(batch):
@@ -28,11 +28,12 @@ class ChessDataModule(L.LightningDataModule):
         super().__init__()
         self.save_hyperparameters(config)
         self.batch_size = config.batch_size
+        self.pgn_processor = PgnProcessor()
 
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
-            training_files = list_npy_files("data/training")
-            validation_files = list_npy_files("data/validation")
+            training_files = self.pgn_processor.list_npy_files("data/training")
+            validation_files = self.pgn_processor.list_npy_files("data/validation")
 
             self.train_dataset = NpyDataset(
                 training_files, max_seq_len=self.hparams.max_seq_len
