@@ -7,7 +7,7 @@ from chess import pgn
 from typing import Literal
 
 
-GameStage = Literal["full", "early", "mid", "late"]
+GameStage = Literal["full", "early", "middle", "late"]
 
 
 class NpyDataset(Dataset):
@@ -16,15 +16,16 @@ class NpyDataset(Dataset):
         self,
         files: list[str],
         max_seq_len: int | None = None,
+        min_seq_len: int = 10,
         stage: GameStage = "full",
-        random_length=False,
+        random_window=False,
     ):
         super().__init__()
 
         self.samples = []
-        self.max_seq_len = max_seq_len
+        self.length = 0
 
-        # TODO: Optimize this and __len__, very inefficient method currently
+        # TODO: Optimize this, very inefficient method currently
         for f in files:
             games: np.ndarray = np.load(f, mmap_mode="r")
             sample_count = len(games)
@@ -33,30 +34,45 @@ class NpyDataset(Dataset):
             # TODO: Double check that the math is mathing
             for i in range(0, sample_count):
                 game = games[i]
-                if self.max_seq_len:
-                    game_end = min(len(game), self.max_seq_len)
+                game_length = len(game)
+
+                if game_length < min_seq_len:
+                    continue
+
+                if max_seq_len:
+                    game_end = min(game_length, max_seq_len)
                 else:
-                    game_end = len(game)
+                    game_end = game_length
+
+                # TODO: Try adjusting stages in dataloader by epoch, first early, then middle, then late, then full, then repeat
+                # TODO: For UCI data it might be better to always have game_start = 0 because it's the same argument against dropout (no context)
+                # TODO: I could also be entirely wrong and should experiment with game_start = n and dropout
                 match stage:
                     case "early":
                         game_start = 0
                         game_end = 15
-                    case "mid":
+                    case "middle":
                         game_start = 16
                         game_end = 31
                     case "late":
                         game_start = 32
-                        game_end = 47
+                        game_end = game_length
+                # TODO: Possibly remove, random_window doesn't seem to work well
+                if random_window:
+                    # Randomly limit game length so we get games starting and ending at every position
+                    game_start = random.randint(
+                        game_start, max(game_start, game_end - min_seq_len)
+                    )
+                    game_end = random.randint(game_start + min_seq_len, game_end)
 
-                if random_length:
-                    if len(game) < 5:
-                        continue
-                    # Randomly limit game length so we get games at every position
-                    game_end = random.randint(game_start + 2, game_end)
+                if game_end > game_length:
+                    game_end = game_length
+
                 self.samples.append((f, i, game_start, game_end))
+                self.length += 1
 
     def __len__(self):
-        return len(self.samples)
+        return self.length
 
     def __getitem__(self, index):
         file_path, i, game_start, game_end = self.samples[index]
