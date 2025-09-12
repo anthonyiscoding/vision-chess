@@ -19,11 +19,12 @@ class NpyDataset(Dataset):
         min_seq_len: int = 10,
         stage: GameStage = "full",
         random_window=False,
+        random_length=True,
     ):
         super().__init__()
 
         self.samples = []
-        self.length = 0
+        self._length = 0
 
         # TODO: Optimize this, very inefficient method currently
         for f in files:
@@ -63,16 +64,17 @@ class NpyDataset(Dataset):
                     game_start = random.randint(
                         game_start, max(game_start, game_end - min_seq_len)
                     )
+                if random_window or random_length:
                     game_end = random.randint(game_start + min_seq_len, game_end)
 
                 if game_end > game_length:
                     game_end = game_length
 
                 self.samples.append((f, i, game_start, game_end))
-                self.length += 1
+                self._length += 1
 
     def __len__(self):
-        return self.length
+        return self._length
 
     def __getitem__(self, index):
         file_path, i, game_start, game_end = self.samples[index]

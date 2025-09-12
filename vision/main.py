@@ -1,5 +1,6 @@
 from multiprocessing import freeze_support
 import lightning as L
+import git
 from datetime import datetime
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import TensorBoardLogger
@@ -12,7 +13,20 @@ from vision.utils import get_device
 def main(config):
     data_module = ChessDataModule(config)
     model = t.ChessModel(config)
-    logger = TensorBoardLogger(save_dir="logs", name=config.env)
+
+    # TODO: Make this not janky
+    try:
+        repo = git.Repo("../")
+    except:
+        repo = git.Repo("./")
+    # Note: This is last commit, not all changes
+    # TODO: Maybe force user to commit before running
+    commit_id = repo.head.commit.hexsha[:7]
+
+    date = datetime.now()
+    logger = TensorBoardLogger(
+        save_dir="logs", name=f"{config.env}-{date:%Y-%m-%d_%H-%M}-{commit_id}"
+    )
     start_time = datetime.now()
 
     callbacks = []
