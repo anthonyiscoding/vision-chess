@@ -18,7 +18,7 @@ class NpyDataset(Dataset):
         max_seq_len: int | None = None,
         min_seq_len: int = 10,
         stage: GameStage = "full",
-        random_window=True,
+        random_window=False,
     ):
         super().__init__()
 
@@ -57,7 +57,7 @@ class NpyDataset(Dataset):
                     case "late":
                         game_start = 32
                         game_end = game_length
-
+                # TODO: Possibly remove, random_window doesn't seem to work well
                 if random_window:
                     # Randomly limit game length so we get games starting and ending at every position
                     game_start = random.randint(
