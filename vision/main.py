@@ -10,6 +10,7 @@ from vision.model.config import config
 from vision.utils import get_device
 
 
+# TODO: Setup a --continue flag to allow model resuming
 def main(config):
     data_module = ChessDataModule(config)
     model = t.ChessModel(config)
@@ -20,7 +21,7 @@ def main(config):
     except:
         repo = git.Repo("./")
     # Note: This is last commit, not all changes
-    # TODO: Maybe force user to commit before running
+    # TODO: Maybe force user to commit before running (allow override with flag)
     commit_id = repo.head.commit.hexsha[:7]
 
     date = datetime.now()
@@ -35,7 +36,7 @@ def main(config):
         # Lightning checkpoint callback - saves .ckpt files
         checkpoint_callback = ModelCheckpoint(
             dirpath="models/",
-            filename=f"model-{start_time:%Y-%m-%d %H:%M:%S}-{{epoch:02d}}-{{val_loss:.3f}}",
+            filename=f"model-{start_time:%Y-%m-%d-%H:%M:%S}-{{epoch:02d}}-{{train_loss:.3f}}",
             monitor="val_loss",
             mode="min",
             save_top_k=2,
@@ -66,6 +67,7 @@ def main(config):
             int(config.batch_limit * 0.1) if config.batch_limit else 1.0
         ),
         fast_dev_run=config.fast_dev_run if config.fast_dev_run else False,
+        val_check_interval=0.5,
     )
 
     trainer.fit(model, data_module)

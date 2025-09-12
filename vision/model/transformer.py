@@ -177,6 +177,8 @@ class ChessModel(L.LightningModule):
             weight_decay=0.01,
             betas=(0.9, 0.95),
         )
+        # TODO: New scheduler maybe why not? Live a little.
+        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=2)
         scheduler = torch.optim.lr_scheduler.LinearLR(
             optimizer, start_factor=1.0, end_factor=0.1, total_iters=8
         )
