@@ -67,7 +67,7 @@ poetry install
 LLMs are mostly produced with autoregressive transformer models but transformers are not LLMs. Transformer models simply take a current state of tokens and produce the next most likely token in the series. It's at least possible that these models would apply to predicted other ordered sequences when those sequences have relationships between each other.
 
 # But Why?
-This is mostly a learning exercise for me, I don't know enough about every type of machine learning model and I've intentionally avoided learning about chess-related models for the time being. To the best of my knowledge LLMs with chess haven't been explored yet beyond trying to get ChatGPT to play chess.
+This is mostly a learning exercise for me. I don't know enough about every type of machine learning model and I've intentionally avoided learning about chess-related models for the time being so that I can focus on transformer models. To the best of my knowledge LLMs with chess haven't been explored yet beyond trying to get ChatGPT to play chess and I thought it would be fun to explore the possibility of more practical applications.
 
 # Performance
 Thus far I have trained a small model on a dataset of ~6 million chess games. It's still training and loss is leveling off but these early results seem promising.
