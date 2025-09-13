@@ -3,7 +3,7 @@
 # About
 Vision is a small in-progress model designed to predict the next move in a chess game using a Transformer model. Most importantly the end goal is to train a bot that plays convincingly like a human.
 
-It's a hobby project and not to be taken too seriously. For more proven neural network architectures check out [pytorch-nnue](https://official-stockfish.github.io/docs/nnue-pytorch-wiki/docs/nnue.html). 
+It's a hobby project and thus far this method is unproven. For more proven neural network architectures check out [pytorch-nnue](https://official-stockfish.github.io/docs/nnue-pytorch-wiki/docs/nnue.html).
 
 # Prerequisites
 Before you proceed make sure you have [poetry installed](https://python-poetry.org/docs/#installation).
@@ -62,6 +62,19 @@ poetry install
     Sanity Checking: |            | 0/? [00:00<?, ?it/s]
     Epoch 0: 100%|████████████| 11391/11391 [1:21:14<00:00,  2.34it/s, v_num=30, train_loss_step=0.707, train_perplexity_step=2.030, val_accuracy_step=0.983]
     ```
+
+# Rationale
+LLMs are mostly produced with autoregressive transformer models but transformers are not LLMs. Transformer models simply take a current state of tokens and produce the next most likely token in the series. It's at least possible that these models would apply to predicted other ordered sequences when those sequences have relationships between each other.
+
+# But Why?
+This is mostly a learning exercise for me, I don't know enough about every type of machine learning model and I've intentionally avoided learning about chess-related models for the time being. To the best of my knowledge LLMs with chess haven't been explored yet beyond trying to get ChatGPT to play chess.
+
+# Performance
+Thus far I have trained a small model on a dataset of ~6 million chess games. It's still training and loss is leveling off but these early results seem promising.
+![a chart showing that training loss has gone from 8.3 to 0.8 over 9 training epochs. the chart is partially cut off](./extra/vision-loss-september-13-2025.png)
+
+Validation loss is following a similar curve. The model only validates every 50% of an epoch which is what is creating the step pattern.
+![a chart showing that validation loss has gone from 8.3 to 0.8 over 9 training epochs. the chart is partially cut off](./extra/vision-val-september-13-2025.png)
 
 # Caveats / Limitations
 
