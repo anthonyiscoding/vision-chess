@@ -28,6 +28,8 @@ def to_embedding(move: str):
     if move in special_tokens_to_embeddings.keys():
         return special_tokens_to_embeddings[move]
 
+    # [:4] is for trimming off promotions at the end of moves
+    move = move[:4]
     try:
         files = ["a", "b", "c", "d", "e", "f", "g", "h"]
         ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
@@ -64,15 +66,14 @@ def from_embedding(embedding: int) -> str:
 def encode_game(game: Game):
     token_ids = []
     for m in game.mainline_moves():
-        # [:4] is for trimming off promotions at the end of moves
         # TODO: Figure out if promotions are relevant to the model
-        token_ids.append(to_embedding(m.uci()[:4]))
+        token_ids.append(to_embedding(m.uci()))
 
     return token_ids
 
 
 def encode_array(move_list):
-    token_ids = [to_embedding(m[:4]) for m in move_list]
+    token_ids = [to_embedding(m) for m in move_list]
     return token_ids
 
 
