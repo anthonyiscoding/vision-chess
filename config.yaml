@@ -14,7 +14,7 @@ data:
   max_seq_len: 110
 
 trainer:
-  max_epochs: 16
+  max_epochs: 40
   accelerator: auto
   devices: auto
   precision: "16-mixed"
@@ -35,9 +35,9 @@ trainer:
     - class_path: lightning.pytorch.callbacks.EarlyStopping
       init_args:
         monitor: "val_loss"
-        patience: 2
+        patience: 3
         mode: "min"
-        stopping_threshold: 0.01
+        stopping_threshold: 1e-6
         verbose: true
 
   logger:
