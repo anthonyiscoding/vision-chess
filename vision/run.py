@@ -16,8 +16,6 @@ model_path = Path(args.model_path)
 model = t.ChessModel.load_from_checkpoint(model_path)
 device = get_device()
 model.to(device)
-model.stat
-
 model.eval()
 
 
