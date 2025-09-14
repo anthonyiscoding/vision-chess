@@ -1,4 +1,3 @@
-from multiprocessing import freeze_support
 from lightning.pytorch.cli import LightningCLI
 import git
 from datetime import datetime
@@ -49,5 +48,4 @@ def main():
 
 
 if __name__ == "__main__":
-    freeze_support()
     main()

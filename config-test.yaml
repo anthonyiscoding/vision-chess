@@ -5,7 +5,7 @@ model:
   qkv_bias: true
   max_seq_len: 50
   attn_dropout: 0.0
-  transformer_layers: 6
+  transformer_layers: 1
   learning_rate: 1.0e-4
   vocabulary_size: 4100
 
@@ -32,6 +32,14 @@ trainer:
         mode: "min"
         stopping_threshold: 0.01
         verbose: true
+
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: "models/"
+        filename: "model-test-{epoch:02d}-{val_loss:.3f}"
+        monitor: "val_loss"
+        mode: "min"
+        save_top_k: 1
 
   logger:
     class_path: lightning.pytorch.loggers.TensorBoardLogger
