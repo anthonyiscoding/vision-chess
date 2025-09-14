@@ -36,7 +36,7 @@ poetry install
     (Note: The search for PGN files isn't recursive, it will only look at the top level of the directory. There is also no progress output just yet.)
     
 
-3. Then run the model, you can also adjust most hyperparameters in `vision/model/config.py`
+3. Then run the model, you can also adjust most hyperparameters in `config.yaml`
 
     ```bash
     python vision/main.py

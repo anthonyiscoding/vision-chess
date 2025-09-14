@@ -1,6 +1,7 @@
 from chess.pgn import Game
 
 
+# TODO: New encoding scheme. The UCI one may not encode enough meaning.
 def _flip(dictionary: dict):
 
     flipped = {}
@@ -22,7 +23,6 @@ special_embeddings_to_tokens = _flip(special_tokens_to_embeddings)
 
 
 # Naive implementation, encodes strings like "a1a1" which aren't valid moves.
-# TODO: Improve move detection
 def to_embedding(move: str):
 
     if move in special_tokens_to_embeddings.keys():

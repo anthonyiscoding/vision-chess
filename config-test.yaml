@@ -1,0 +1,40 @@
+model:
+  emb_dim: 64
+  hidden_dim: 171  # 64 * 2.67
+  num_heads: 8
+  qkv_bias: true
+  max_seq_len: 50
+  attn_dropout: 0.0
+  transformer_layers: 6
+  learning_rate: 1.0e-4
+  vocabulary_size: 4100
+
+data:
+  batch_size: 1
+  max_seq_len: 50
+
+trainer:
+  max_epochs: 2
+  accelerator: auto
+  devices: auto
+  precision: "16-mixed"
+  gradient_clip_val: 1.0
+  log_every_n_steps: 50
+  val_check_interval: 0.5
+  limit_train_batches: 10
+  limit_val_batches: 1
+  
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        monitor: "val_loss"
+        patience: 2
+        mode: "min"
+        stopping_threshold: 0.01
+        verbose: true
+
+  logger:
+    class_path: lightning.pytorch.loggers.TensorBoardLogger
+    init_args:
+      save_dir: "logs"
+      name: "test"

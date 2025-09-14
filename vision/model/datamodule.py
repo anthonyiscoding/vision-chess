@@ -24,10 +24,17 @@ def collate_fn(batch):
 
 
 class ChessDataModule(L.LightningDataModule):
-    def __init__(self, config):
+    def __init__(self, batch_size: int, max_seq_len: int = 110):
+        """Initialize the Chess Data Module.
+
+        Args:
+            batch_size: Number of samples per batch
+            max_seq_len: Maximum sequence length for input sequences
+        """
         super().__init__()
-        self.save_hyperparameters(config)
-        self.batch_size = config.batch_size
+        self.save_hyperparameters()
+        self.batch_size = batch_size
+        self.max_seq_len = max_seq_len
         self.pgn_processor = PgnProcessor()
 
     def setup(self, stage=None):
@@ -36,10 +43,10 @@ class ChessDataModule(L.LightningDataModule):
             validation_files = self.pgn_processor.list_npy_files("data/validation")
 
             self.train_dataset = NpyDataset(
-                training_files, max_seq_len=self.hparams.max_seq_len
+                training_files, max_seq_len=self.max_seq_len
             )
             self.val_dataset = NpyDataset(
-                validation_files, max_seq_len=self.hparams.max_seq_len
+                validation_files, max_seq_len=self.max_seq_len
             )
 
     def train_dataloader(self):

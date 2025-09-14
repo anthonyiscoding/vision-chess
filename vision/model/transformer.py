@@ -24,50 +24,79 @@ class PreNormTransformerLayer(nn.Module):
 
 
 class ChessModel(L.LightningModule):
-    def __init__(self, config):
-        super().__init__()
-        self.save_hyperparameters(config)
+    def __init__(
+        self,
+        emb_dim: int,
+        hidden_dim: int,
+        num_heads: int,
+        transformer_layers: int,
+        vocabulary_size: int,
+        qkv_bias: bool = True,
+        max_seq_len: int = 110,
+        attn_dropout: float = 0.0,
+        learning_rate: float = 1e-6,
+    ):
+        """Initialize the Chess Transformer Model.
 
-        input_dim = self.hparams["emb_dim"]
-        hidden_dim = self.hparams["hidden_dim"]
+        Args:
+            emb_dim: Embedding dimension for tokens and positions
+            hidden_dim: Hidden dimension for the feedforward layers
+            num_heads: Number of attention heads in multi-head attention
+            transformer_layers: Number of transformer blocks
+            vocabulary_size: Size of the token vocabulary
+            qkv_bias: Whether to use bias in query, key, value projections
+            max_seq_len: Maximum sequence length for positional embeddings (number_of_moves - 2; ex. 102 == 50 turns per player)
+            attn_dropout: Dropout rate for attention layers
+            learning_rate: Learning rate for the optimizer
+        """
+        super().__init__()
+        self.save_hyperparameters()
+
+        self.emb_dim = emb_dim
+        self.hidden_dim = hidden_dim
+        self.num_heads = num_heads
+        self.qkv_bias = qkv_bias
+        self.max_seq_len = max_seq_len
+        self.attn_dropout = attn_dropout
+        self.transformer_layers = transformer_layers
+        self.learning_rate = learning_rate
+        self.vocabulary_size = vocabulary_size
 
         ff_config = {
-            "gate_proj": nn.Linear(input_dim, hidden_dim),
-            "up_proj": nn.Linear(input_dim, hidden_dim),
-            "down_proj": nn.Linear(hidden_dim, input_dim),
+            "gate_proj": nn.Linear(self.emb_dim, self.hidden_dim),
+            "up_proj": nn.Linear(self.emb_dim, self.hidden_dim),
+            "down_proj": nn.Linear(self.hidden_dim, self.emb_dim),
         }
 
         self.token_embedding = nn.Embedding(
-            self.hparams["vocabulary_size"],
-            self.hparams["emb_dim"],
+            self.vocabulary_size,
+            self.emb_dim,
             padding_idx=special_tokens_to_embeddings["<|pad|>"],
         )
         self.positional_embedding = nn.Embedding(
-            self.hparams["max_seq_len"],
-            self.hparams["emb_dim"],
+            self.max_seq_len,
+            self.emb_dim,
         )
 
         self.transformer_blocks = nn.ModuleList(
             [
                 PreNormTransformerLayer(
                     attn=nn.MultiheadAttention(
-                        embed_dim=self.hparams["emb_dim"],
-                        num_heads=self.hparams["num_heads"],
-                        dropout=self.hparams["attn_dropout"],
-                        bias=self.hparams["qkv_bias"],
+                        embed_dim=self.emb_dim,
+                        num_heads=self.num_heads,
+                        dropout=self.attn_dropout,
+                        bias=self.qkv_bias,
                         batch_first=True,
                     ),
                     mlp=FeedForward(**ff_config),
-                    dim=self.hparams["emb_dim"],
+                    dim=self.emb_dim,
                 )
-                for _ in range(self.hparams["transformer_layers"])
+                for _ in range(self.transformer_layers)
             ]
         )
 
-        self.final_norm = nn.RMSNorm(self.hparams["emb_dim"])
-        self.out_head = nn.Linear(
-            self.hparams["emb_dim"], self.hparams["vocabulary_size"], bias=False
-        )
+        self.final_norm = nn.RMSNorm(self.emb_dim)
+        self.out_head = nn.Linear(self.emb_dim, self.vocabulary_size, bias=False)
 
     def forward(self, idx):
         _, seq_len = idx.shape
@@ -173,7 +202,7 @@ class ChessModel(L.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.parameters(),
-            lr=self.hparams["learning_rate"],
+            lr=self.learning_rate,
             weight_decay=0.01,
             betas=(0.9, 0.95),
         )
