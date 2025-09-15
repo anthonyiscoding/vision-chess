@@ -34,7 +34,9 @@ class ChessModel(L.LightningModule):
         qkv_bias: bool = True,
         max_seq_len: int = 110,
         attn_dropout: float = 0.0,
-        learning_rate: float = 1e-6,
+        learning_rate: float = 1e-5,
+        scheduler_patience: int = 4,
+        reduce_lr_by: float = 0.5,
     ):
         """Initialize the Chess Transformer Model.
 
@@ -48,6 +50,8 @@ class ChessModel(L.LightningModule):
             max_seq_len: Maximum sequence length for positional embeddings (number_of_moves - 2; ex. 102 == 50 turns per player)
             attn_dropout: Dropout rate for attention layers
             learning_rate: Learning rate for the optimizer
+            scheduler_patience: How many epochs to wait for improvement before reducing learning rate
+            reduce_lr_by: What how much to reduce lr by when scheduler_patience is reached (lr * reduce_lr_by)
         """
         super().__init__()
         self.save_hyperparameters()
@@ -55,12 +59,14 @@ class ChessModel(L.LightningModule):
         self.emb_dim = emb_dim
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads
+        self.transformer_layers = transformer_layers
+        self.vocabulary_size = vocabulary_size
         self.qkv_bias = qkv_bias
         self.max_seq_len = max_seq_len
         self.attn_dropout = attn_dropout
-        self.transformer_layers = transformer_layers
         self.learning_rate = learning_rate
-        self.vocabulary_size = vocabulary_size
+        self.scheduler_patience = scheduler_patience
+        self.reduce_lr_by = reduce_lr_by
 
         ff_config = {
             "gate_proj": nn.Linear(self.emb_dim, self.hidden_dim),
@@ -200,36 +206,22 @@ class ChessModel(L.LightningModule):
         return result
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(
-            self.parameters(),
-            lr=self.learning_rate,
-            weight_decay=0.01,
-            betas=(0.9, 0.95),
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            patience=self.scheduler_patience,
+            factor=self.reduce_lr_by,
+            mode="min",
+            threshold_mode="abs",
         )
-        # TODO: New scheduler maybe why not? Live a little.
-        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=2)
-        scheduler = torch.optim.lr_scheduler.LinearLR(
-            optimizer, start_factor=1.0, end_factor=0.1, total_iters=8
-        )
+
         return {
             "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "interval": "epoch",
-            },
+            "lr_scheduler": scheduler,
+            "monitor": "val_loss",
         }
 
     def on_before_optimizer_step(self, optimizer):
         self.clip_gradients(
             optimizer, gradient_clip_val=1.0, gradient_clip_algorithm="norm"
         )
-
-    # TODO: Probably not needed
-    # def on_save_checkpoint(self, checkpoint):
-    #     if hasattr(self, "config"):
-    #         checkpoint["config"] = self.config.to_dict()
-    #         checkpoint["model_metadata"] = {
-    #             "timestamp": datetime.now().isoformat(),
-    #             "epoch": self.current_epoch,
-    #             "global_step": self.global_step,
-    #         }
