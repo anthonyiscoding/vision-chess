@@ -1,3 +1,4 @@
+import torch
 from lightning.pytorch.cli import LightningCLI
 import git
 from datetime import datetime
@@ -44,6 +45,7 @@ class CustomLightningCLI(LightningCLI):
 
 
 def main():
+    torch.set_float32_matmul_precision("medium")
     cli = CustomLightningCLI(ChessModel, ChessDataModule)
 
 
