@@ -205,7 +205,25 @@ class ChessModel(L.LightningModule):
             return None
         return result
 
+    def on_load_checkpoint(self, checkpoint):
+        # when restoring from checkpoint, explicitly set LR from config
+        for optimizer in self.trainer.optimizers:
+            for param_group in optimizer.param_groups:
+                param_group["lr"] = self.learning_rate
+        # fix scheduler config (step size, gamma, etc)
+        if hasattr(self.trainer, "lr_scheduler_configs"):
+            for sched_cfg in self.trainer.lr_scheduler_configs:
+                scheduler = sched_cfg.scheduler
+                if hasattr(scheduler, "patience"):
+                    scheduler.patience = self.scheduler_patience
+
+                if hasattr(scheduler, "factor"):
+                    scheduler.factor = self.reduce_lr_by
+
     def configure_optimizers(self):
+        print(
+            f"Optimizer Config: learning_rate: {self.learning_rate}, scheduler_patience: {self.scheduler_patience}, reduce_by_lr: {self.reduce_lr_by}"
+        )
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,

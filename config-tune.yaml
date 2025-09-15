@@ -6,7 +6,9 @@ model:
   max_seq_len: 50
   attn_dropout: 0.0
   transformer_layers: 2
-  learning_rate: 1.0e-4
+  learning_rate: 1.0e-6
+  scheduler_patience: 4
+  reduce_lr_by: 0.5
   vocabulary_size: 4100
 
 data:
