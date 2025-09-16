@@ -12,7 +12,7 @@ model:
   vocabulary_size: 20
 
 data:
-  batch_size: 1200
+  batch_size: 280
   max_seq_len: 410
 
 trainer:
