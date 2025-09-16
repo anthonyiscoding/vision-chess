@@ -12,11 +12,11 @@ model:
   vocabulary_size: 4100
 
 data:
-  batch_size: 2420
+  batch_size: 1200
   max_seq_len: 110
 
 trainer:
-  max_epochs: 24
+  max_epochs: 50
   accelerator: auto
   devices: auto
   precision: "16-mixed"

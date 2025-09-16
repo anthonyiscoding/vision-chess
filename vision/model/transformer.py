@@ -8,19 +8,18 @@ from vision.model.tokenizer import special_tokens_to_embeddings
 class PreNormTransformerLayer(nn.Module):
     def __init__(self, attn, mlp, dim):
         super().__init__()
-        self.norm1 = nn.RMSNorm(dim)
-        self.attn = attn
-        self.norm2 = nn.RMSNorm(dim)
-        self.mlp = mlp
+        self.transformer_layer = nn.TransformerEncoderLayer(
+            d_model=dim,
+            nhead=attn.num_heads,
+            dim_feedforward=mlp.gate_proj.out_features,
+            dropout=attn.dropout,
+            activation="gelu",
+            batch_first=True,
+            norm_first=True,
+        )
 
     def forward(self, x):
-        # residual scaling to avoid variance blowup
-        normed_x = self.norm1(x)
-        # PyTorch MultiheadAttention expects (query, key, value) and returns (output, weights)
-        attn_output, _ = self.attn(normed_x, normed_x, normed_x)
-        x = x + attn_output
-        x = x + self.mlp(self.norm2(x))
-        return x
+        return self.transformer_layer(x)
 
 
 class ChessModel(L.LightningModule):
