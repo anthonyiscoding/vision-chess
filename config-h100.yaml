@@ -6,7 +6,7 @@ model:
   max_seq_len: 110
   attn_dropout: 0.0
   transformer_layers: 8
-  learning_rate: 1.0e-6
+  learning_rate: 1.0e-4
   scheduler_patience: 4
   reduce_lr_by: 0.5
   vocabulary_size: 4100
@@ -23,8 +23,7 @@ trainer:
   gradient_clip_val: 1.0
   log_every_n_steps: 50
   val_check_interval: 0.5
-  every_n_epochs: 1
-  save_on_train_epoch_end: True
+
 
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
@@ -35,7 +34,9 @@ trainer:
         mode: "min"
         save_top_k: 2
         save_last: "link"
-    
+        every_n_epochs: 1
+        save_on_train_epoch_end: True   
+
     - class_path: lightning.pytorch.callbacks.EarlyStopping
       init_args:
         monitor: "val_loss"
