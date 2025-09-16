@@ -17,7 +17,6 @@ class NpyDataset(Dataset):
         files: list[str],
         max_seq_len: int | None = None,
         min_seq_len: int = 10,
-        stage: GameStage = "full",
         random_window=False,
         random_length=True,
     ):
@@ -48,16 +47,6 @@ class NpyDataset(Dataset):
                 # TODO: Try adjusting stages in dataloader by epoch, first early, then middle, then late, then full, then repeat
                 # TODO: For UCI data it might be better to always have game_start = 0 because it's the same argument against dropout (no context)
                 # TODO: I could also be entirely wrong and should experiment with game_start = n and dropout
-                match stage:
-                    case "early":
-                        game_start = 0
-                        game_end = 15
-                    case "middle":
-                        game_start = 16
-                        game_end = 31
-                    case "late":
-                        game_start = 32
-                        game_end = game_length
                 # TODO: Possibly remove, random_window doesn't seem to work well
                 if random_window:
                     # Randomly limit game length so we get games starting and ending at every position
