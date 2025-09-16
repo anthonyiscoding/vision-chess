@@ -1,4 +1,5 @@
 from chess.pgn import Game
+import warnings
 
 
 # TODO: New encoding scheme. The UCI one may not encode enough meaning.
@@ -12,94 +13,80 @@ def _flip(dictionary: dict):
     return flipped
 
 
+files = ["a", "b", "c", "d", "e", "f", "g", "h"]
+ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
+
+base_vocab = files + ranks
+token_to_embedding_map = {token: i for i, token in enumerate(base_vocab)}
+
+# Add special tokens at the end
+offset = len(token_to_embedding_map)
 special_tokens_to_embeddings = {
-    "<|startofgame|>": 4096,
-    "<|endofgame|>": 4097,
-    "<|unk|>": 4098,
-    "<|pad|>": 4099,
+    "<|sog|>": offset + 0,  # Start of game
+    "<|eog|>": offset + 1,  # End of game
+    "<|unk|>": offset + 2,  # Unknown token
+    "<|pad|>": offset + 3,  # Padding
 }
+token_to_embedding_map.update(special_tokens_to_embeddings)
 
-special_embeddings_to_tokens = _flip(special_tokens_to_embeddings)
+embedding_to_token_map = _flip(token_to_embedding_map)
+VOCABULARY_SIZE = len(token_to_embedding_map)
 
 
-# Naive implementation, encodes strings like "a1a1" which aren't valid moves.
 def to_embedding(move: str):
-
-    if move in special_tokens_to_embeddings.keys():
-        return special_tokens_to_embeddings[move]
+    if move in token_to_embedding_map:
+        return [token_to_embedding_map[move]]
 
     # [:4] is for trimming off promotions at the end of moves
     move = move[:4]
     try:
-        files = ["a", "b", "c", "d", "e", "f", "g", "h"]
-        ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
-
-        file_start = files.index(move[0])
-        rank_start = ranks.index(move[1])
-        file_end = files.index(move[2])
-        rank_end = ranks.index(move[3])
-
-        return file_start + 8 * rank_start + 64 * file_end + 512 * rank_end
-    except:
-        return special_tokens_to_embeddings["<|unk|>"]
+        return [token_to_embedding_map[char] for char in move]
+    except KeyError:
+        return [token_to_embedding_map["<|unk|>"]]
 
 
-def from_embedding(embedding: int) -> str:
-
-    if embedding in special_embeddings_to_tokens.keys():
-        return special_embeddings_to_tokens[embedding]
-
-    files = ["a", "b", "c", "d", "e", "f", "g", "h"]
-    ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
-
-    file_start = embedding % 8
-    embedding //= 8
-    rank_start = embedding % 8
-    embedding //= 8
-    file_end = embedding % 8
-    embedding //= 8
-    rank_end = embedding % 8
-
-    return files[file_start] + ranks[rank_start] + files[file_end] + ranks[rank_end]
+def from_embedding(embedding: list[int] | int) -> str:
+    if not isinstance(embedding, list):
+        embedding = [embedding]
+    return "".join([embedding_to_token_map.get(i, "<|unk|>") for i in embedding])
 
 
 def encode_game(game: Game):
     token_ids = []
+    token_ids.extend(to_embedding("<|sog|>"))
     for m in game.mainline_moves():
         # TODO: Figure out if promotions are relevant to the model
-        token_ids.append(to_embedding(m.uci()))
-
+        token_ids.extend(to_embedding(m.uci()))
+    token_ids.extend(to_embedding("<|eog|>"))
     return token_ids
 
 
 def encode_array(move_list):
-    token_ids = [to_embedding(m) for m in move_list]
+    token_ids = []
+    for m in move_list:
+        token_ids.extend(to_embedding(m))
     return token_ids
 
 
 def decode(token_ids: list[int]):
-    decoded_ids = []
-
-    for t in token_ids:
-        decoded_ids.append(t)
-
-    return decoded_ids
+    moves = []
+    i = 0
+    while i < len(token_ids):
+        if token_ids[i] >= offset:  # Is a special token
+            moves.append(from_embedding(token_ids[i]))
+            i += 1
+        else:  # It's a move
+            if i + 4 <= len(token_ids):
+                moves.append(from_embedding(token_ids[i : i + 4]))
+                i += 4
+            else:  # Incomplete move at the end
+                warnings.warn(
+                    f"Incomplete move detected, got {token_ids[i:]}, skipping rest of the list."
+                )
+                i = len(token_ids)
+    return moves
 
 
 def generate_all_possible_moves():
-    files = ["a", "b", "c", "d", "e", "f", "g", "h"]
-    ranks = ["1", "2", "3", "4", "5", "6", "7", "8"]
-
-    moves = []
-
-    for f in files:
-        for r in ranks:
-            for f_ in files:
-                for r_ in ranks:
-                    move = f"{f}{r}{f_}{r_}"
-                    moves.append(move)
-
-    for k in special_tokens_to_embeddings.keys():
-        moves.append(k)
-
-    return moves
+    # This function is less relevant with the new scheme, but we can update it
+    return list(token_to_embedding_map.keys())
