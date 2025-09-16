@@ -31,7 +31,7 @@ class ChessModel(L.LightningModule):
         transformer_layers: int,
         vocabulary_size: int,
         qkv_bias: bool = True,
-        max_seq_len: int = 110,
+        max_seq_len: int = 410,  # 4 values = 1 move (+ sog/eog)
         attn_dropout: float = 0.0,
         learning_rate: float = 1e-5,
         scheduler_patience: int = 4,
