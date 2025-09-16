@@ -1,12 +1,15 @@
 from chess.pgn import Game, read_game
 import chess
 from io import StringIO
+import warnings
 
 from vision.model.tokenizer import (
     to_embedding,
     from_embedding,
     generate_all_possible_moves,
     encode_game,
+    encode_array,
+    decode,
 )
 
 
@@ -145,3 +148,206 @@ def test_encode_game():
     expected.extend([0, 14, 0, 15])  # a7a8 (promotion trimmed)
     expected.extend([17])  # <|eog|>
     assert result == expected
+
+
+def test_encode_array_empty_list():
+    # Test empty move list
+    result = encode_array([])
+    assert result == []
+
+
+def test_encode_array_single_move():
+    # Test single move
+    result = encode_array(["e2e4"])
+    expected = [4, 9, 4, 11]  # e2e4
+    assert result == expected
+
+
+def test_encode_array_multiple_moves():
+    # Test multiple moves
+    moves = ["e2e4", "e7e5", "g1f3"]
+    result = encode_array(moves)
+    expected = []
+    expected.extend([4, 9, 4, 11])  # e2e4
+    expected.extend([4, 14, 4, 12])  # e7e5
+    expected.extend([6, 8, 5, 10])  # g1f3
+    assert result == expected
+
+
+def test_encode_array_special_tokens():
+    # Test array with special tokens
+    moves = ["<|sog|>", "e2e4", "<|eog|>"]
+    result = encode_array(moves)
+    expected = [16, 4, 9, 4, 11, 17]  # <|sog|>, e2e4, <|eog|>
+    assert result == expected
+
+
+def test_encode_array_with_promotions():
+    # Test moves with promotions (should be trimmed)
+    moves = ["a7a8q", "h2h1n"]
+    result = encode_array(moves)
+    expected = []
+    expected.extend([0, 14, 0, 15])  # a7a8 (q trimmed)
+    expected.extend([7, 9, 7, 8])  # h2h1 (n trimmed)
+    assert result == expected
+
+
+def test_encode_array_with_unknown_moves():
+    # Test array with moves containing unknown characters
+    moves = ["e2e4", "z9z9", "a1h8"]
+    result = encode_array(moves)
+    expected = []
+    expected.extend([4, 9, 4, 11])  # e2e4
+    expected.extend([18])  # z9z9 -> <|unk|>
+    expected.extend([0, 8, 7, 15])  # a1h8
+    assert result == expected
+
+
+def test_encode_array_mixed_length_moves():
+    # Test array with moves of different lengths
+    moves = ["e2", "e2e4", "a"]
+    result = encode_array(moves)
+    expected = []
+    expected.extend([4, 9])  # e2
+    expected.extend([4, 9, 4, 11])  # e2e4
+    expected.extend([0])  # a
+    assert result == expected
+
+
+def test_decode_empty_list():
+    # Test empty token list
+    result = decode([])
+    assert result == []
+
+
+def test_decode_single_special_token():
+    # Test single special tokens
+    assert decode([16]) == ["<|sog|>"]
+    assert decode([17]) == ["<|eog|>"]
+    assert decode([18]) == ["<|unk|>"]
+    assert decode([19]) == ["<|pad|>"]
+
+
+def test_decode_multiple_special_tokens():
+    # Test multiple special tokens
+    result = decode([16, 17])
+    assert result == ["<|sog|>", "<|eog|>"]
+
+    result = decode([16, 18, 17])
+    assert result == ["<|sog|>", "<|unk|>", "<|eog|>"]
+
+
+def test_decode_single_move():
+    # Test single 4-character move
+    result = decode([4, 9, 4, 11])  # e2e4
+    assert result == ["e2e4"]
+
+    result = decode([0, 8, 7, 15])  # a1h8
+    assert result == ["a1h8"]
+
+
+def test_decode_multiple_moves():
+    # Test multiple 4-character moves
+    token_ids = [4, 9, 4, 11, 4, 14, 4, 12]  # e2e4, e7e5
+    result = decode(token_ids)
+    assert result == ["e2e4", "e7e5"]
+
+
+def test_decode_game_with_special_tokens():
+    # Test complete game with start and end tokens
+    token_ids = [16]  # <|sog|>
+    token_ids.extend([4, 9, 4, 11])  # e2e4
+    token_ids.extend([4, 14, 4, 12])  # e7e5
+    token_ids.extend([17])  # <|eog|>
+
+    result = decode(token_ids)
+    assert result == ["<|sog|>", "e2e4", "e7e5", "<|eog|>"]
+
+
+def test_decode_mixed_moves_and_special_tokens():
+    # Test mix of moves and special tokens
+    token_ids = [
+        16,
+        4,
+        9,
+        4,
+        11,
+        18,
+        0,
+        8,
+        7,
+        15,
+        17,
+    ]  # <|sog|>, e2e4, <|unk|>, a1h8, <|eog|>
+    result = decode(token_ids)
+    assert result == ["<|sog|>", "e2e4", "<|unk|>", "a1h8", "<|eog|>"]
+
+
+def test_decode_incomplete_move_warning():
+    # Test incomplete move at the end (should trigger warning)
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        # Test with 1 token remaining
+        result = decode([4, 9, 4, 11, 4])  # e2e4 + incomplete
+        assert len(w) == 1
+        assert "Incomplete move detected" in str(w[0].message)
+        assert result == ["e2e4"]
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        # Test with 2 tokens remaining
+        result = decode([4, 9, 4, 11, 4, 9])  # e2e4 + incomplete
+        assert len(w) == 1
+        assert "Incomplete move detected" in str(w[0].message)
+        assert result == ["e2e4"]
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        # Test with 3 tokens remaining
+        result = decode([4, 9, 4, 11, 4, 9, 4])  # e2e4 + incomplete
+        assert len(w) == 1
+        assert "Incomplete move detected" in str(w[0].message)
+        assert result == ["e2e4"]
+
+
+def test_decode_incomplete_move_after_special_token():
+    # Test incomplete move after special token
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        result = decode([16, 4, 9, 4, 11, 4])  # <|sog|>, e2e4, incomplete
+        assert len(w) == 1
+        assert "Incomplete move detected" in str(w[0].message)
+        assert result == ["<|sog|>", "e2e4"]
+
+
+def test_decode_only_incomplete_move():
+    # Test only incomplete move tokens
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        result = decode([4, 9])  # incomplete move
+        assert len(w) == 1
+        assert "Incomplete move detected" in str(w[0].message)
+        assert result == []
+
+
+def test_decode_unknown_embeddings_in_moves():
+    # Test moves with unknown embeddings (should still decode but with <|unk|>)
+    result = decode([999, 999, 999, 999])  # All unknown tokens forming a "move"
+    assert result == ["<|unk|>", "<|unk|>", "<|unk|>", "<|unk|>"]
+
+
+def test_decode_roundtrip():
+    # Test encoding then decoding gives back original structure
+
+    moves = ["<|sog|>", "e2e4", "e7e5", "g1f3", "<|eog|>"]
+    encoded = encode_array(moves)
+    decoded = decode(encoded)
+    assert decoded == moves
