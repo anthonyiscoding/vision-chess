@@ -29,12 +29,12 @@ class NpyDataset(Dataset):
         for f in files:
             games: np.ndarray = np.load(f, mmap_mode="r")
             sample_count = len(games)
-            game_start = 0
 
             # TODO: Double check that the math is mathing
             for i in range(0, sample_count):
                 game = games[i]
                 game_length = len(game)
+                game_start = 0
 
                 if game_length < min_seq_len:
                     continue
