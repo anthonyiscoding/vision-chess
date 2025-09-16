@@ -1,0 +1,52 @@
+model:
+  emb_dim: 512
+  hidden_dim: 1365  # emb_dim * 2.67
+  num_heads: 8
+  qkv_bias: true
+  max_seq_len: 110
+  attn_dropout: 0.0
+  transformer_layers: 6
+  learning_rate: 1.0e-5
+  scheduler_patience: 5
+  reduce_lr_by: 0.5
+  vocabulary_size: 4100
+
+data:
+  batch_size: 256
+  max_seq_len: 110
+
+trainer:
+  max_epochs: 50
+  accelerator: auto
+  devices: auto
+  precision: "16-mixed"
+  gradient_clip_val: 1.0
+  log_every_n_steps: 50
+  val_check_interval: 0.5
+
+
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: "models/"
+        filename: "model-{epoch:02d}-{val_loss:.3f}"
+        monitor: "val_loss"
+        mode: "min"
+        save_top_k: 2
+        save_last: "link"
+        every_n_epochs: 1
+        save_on_train_epoch_end: True   
+
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        monitor: "val_loss"
+        patience: 2
+        mode: "min"
+        stopping_threshold: 1e-6
+        verbose: true
+
+  logger:
+    class_path: lightning.pytorch.loggers.TensorBoardLogger
+    init_args:
+      save_dir: "logs"
+      name: "default"
