@@ -11,7 +11,7 @@ class PreNormTransformerLayer(nn.Module):
         self.transformer_layer = nn.TransformerEncoderLayer(
             d_model=dim,
             nhead=attn.num_heads,
-            dim_feedforward=mlp.gate_proj.out_features,
+            dim_feedforward=mlp.w1.out_features,
             dropout=attn.dropout,
             activation="gelu",
             batch_first=True,
