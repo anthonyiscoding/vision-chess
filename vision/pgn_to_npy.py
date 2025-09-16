@@ -24,7 +24,6 @@ class PgnProcessor:
 
             while game:
                 try:
-                    assert not isinstance(game, bool)
                     game = chess.pgn.read_game(f)
                     game_list = encode_game(game)
                     yield game_list

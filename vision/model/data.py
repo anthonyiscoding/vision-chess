@@ -2,8 +2,6 @@ import torch
 import random
 import numpy as np
 from torch.utils.data import Dataset
-from vision.model import tokenizer
-from chess import pgn
 from typing import Literal
 
 
