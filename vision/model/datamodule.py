@@ -24,7 +24,7 @@ def collate_fn(batch):
 
 
 class ChessDataModule(L.LightningDataModule):
-    def __init__(self, batch_size: int, max_seq_len: int = 110):
+    def __init__(self, batch_size: int, max_seq_len: int = 410):
         """Initialize the Chess Data Module.
 
         Args:
