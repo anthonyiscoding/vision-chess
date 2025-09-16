@@ -70,6 +70,12 @@ class NpyDataset(Dataset):
                 if game_end > game_length:
                     game_end = game_length
 
+                delta_check = game_end - game_start
+                if delta_check < min_seq_len:
+                    raise ValueError(
+                        f"Expected game_end and game_start to be min_seq_len ({min_seq_len}) apart. Actual distance was: {delta_check}"
+                    )
+
                 self.samples.append((f, i, game_start, game_end))
                 self._length += 1
 
