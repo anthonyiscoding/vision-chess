@@ -56,6 +56,7 @@ class ChessDataModule(L.LightningDataModule):
             collate_fn=collate_fn,
             shuffle=True,
             num_workers=2,
+            persistent_workers=True,
         )
 
     def val_dataloader(self):
@@ -65,5 +66,5 @@ class ChessDataModule(L.LightningDataModule):
             collate_fn=collate_fn,
             shuffle=False,
             num_workers=2,
-            persistent_workers=False,
+            persistent_workers=True,
         )
