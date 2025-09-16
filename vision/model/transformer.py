@@ -120,8 +120,8 @@ class ChessModel(L.LightningModule):
         input_ids, target_ids = batch
 
         # Ensure tensors are on the correct device and contiguous
-        input_ids = input_ids.to(self.device).contiguous()
-        target_ids = target_ids.to(self.device).contiguous()
+        input_ids: torch.Tensor = input_ids.to(self.device).contiguous()
+        target_ids: torch.Tensor = target_ids.to(self.device).contiguous()
 
         # # Should be no unknown inputs in the data
         # # TODO: Figure out how to do this more efficiently in a single check
@@ -130,33 +130,34 @@ class ChessModel(L.LightningModule):
         # if special_tokens_to_embeddings["<|unk|>"] in target_ids:
         #     return None
 
-        output = self(input_ids)
+        output: torch.Tensor = self(input_ids)
         output = output.view(-1, output.size(-1))  # (batch*seq_len, vocab_size)
-        target = target_ids.view(-1)  # (batch*seq_len,)
+        target: torch.Tensor = target_ids.view(-1)  # (batch*seq_len,)
 
-        mask = target != special_tokens_to_embeddings["<|pad|>"]
+        mask: torch.Tensor = target != special_tokens_to_embeddings["<|pad|>"]
         total = mask.sum().item()
-
         if not mask.any() or total == 0:
             # All tokens are padding, skip this batch
             return None
 
         if mask.shape[0] != output.shape[0]:
-            # TODO: Determine if still needed and log this if so
-            return None
+            raise ValueError(
+                f"Shape mismatch: mask.shape[0] ({mask.shape[0]}) != output.shape[0] ({output.shape[0]}). "
+                f"input_ids.shape: {input_ids.shape}, target_ids.shape: {target_ids.shape}, "
+                f"output.shape: {output.shape}, mask.shape: {mask.shape}"
+            )
 
-        loss = nn.functional.cross_entropy(
-            output[mask], target[mask], label_smoothing=0.05
-        )
+        output = output[mask]
+        target = target[mask]
+
+        loss = nn.functional.cross_entropy(output, target, label_smoothing=0.05)
 
         if torch.isnan(loss) or torch.isinf(loss):
             self.log(f"{stage}_loss_exploded", loss)
             return None
 
-        pred = output[mask].argmax(dim=1)
-        correct = (
-            pred.eq(target[mask]).sum().item()
-        )  # TODO: target[mask].view_as(pred)?
+        pred = output.argmax(dim=1)
+        correct = pred.eq(target).sum().item()  # TODO: target[mask].view_as(pred)?
         accuracy = correct / total if total > 0 else 0.0
         perplexity = torch.exp(loss)
 
