@@ -19,7 +19,7 @@ def test_to_from():
     for m in moves:
         encoded = to_embedding(m)
         decoded = from_embedding(encoded)
-        assert m == decoded
+        assert m == decoded[0]
 
 
 def test_to_embedding_special_tokens():
@@ -71,44 +71,44 @@ def test_to_embedding_short_moves():
 
 def test_from_embedding_single_int():
     # Test single integer input
-    assert from_embedding(0) == "a"
-    assert from_embedding(7) == "h"
-    assert from_embedding(8) == "1"
-    assert from_embedding(15) == "8"
+    assert from_embedding(0) == ["a"]
+    assert from_embedding(7) == ["h"]
+    assert from_embedding(8) == ["1"]
+    assert from_embedding(15) == ["8"]
 
 
 def test_from_embedding_special_tokens():
     # Test special tokens
-    assert from_embedding(16) == "<|sog|>"
-    assert from_embedding(17) == "<|eog|>"
-    assert from_embedding(18) == "<|unk|>"
-    assert from_embedding(19) == "<|pad|>"
+    assert from_embedding(16) == ["<|sog|>"]
+    assert from_embedding(17) == ["<|eog|>"]
+    assert from_embedding(18) == ["<|unk|>"]
+    assert from_embedding(19) == ["<|pad|>"]
 
 
 def test_from_embedding_list():
     # Test list of integers
-    assert from_embedding([4, 9, 4, 11]) == "e2e4"
-    assert from_embedding([0, 8, 7, 15]) == "a1h8"
-    assert from_embedding([16]) == "<|sog|>"
-    assert from_embedding([17]) == "<|eog|>"
+    assert from_embedding([4, 9, 4, 11]) == ["e", "2", "e", "4"]
+    assert from_embedding([0, 8, 7, 15]) == ["a", "1", "h", "8"]
+    assert from_embedding([16]) == ["<|sog|>"]
+    assert from_embedding([17]) == ["<|eog|>"]
 
 
 def test_from_embedding_unknown_tokens():
     # Test unknown embedding values
-    assert from_embedding(999) == "<|unk|>"
-    assert from_embedding([999, 1000]) == "<|unk|><|unk|>"
-    assert from_embedding([0, 999, 7]) == "a<|unk|>h"
+    assert from_embedding(999) == ["<|unk|>"]
+    assert from_embedding([999, 1000]) == ["<|unk|>", "<|unk|>"]
+    assert from_embedding([0, 999, 7]) == ["a", "<|unk|>", "h"]
 
 
 def test_from_embedding_empty_list():
     # Test empty list
-    assert from_embedding([]) == ""
+    assert from_embedding([]) == []
 
 
 def test_from_embedding_mixed_valid_invalid():
     # Test mix of valid and invalid embeddings
-    assert from_embedding([0, 999, 8]) == "a<|unk|>1"
-    assert from_embedding([16, 999, 17]) == "<|sog|><|unk|><|eog|>"
+    assert from_embedding([0, 999, 8]) == ["a", "<|unk|>", "1"]
+    assert from_embedding([16, 999, 17]) == ["<|sog|>", "<|unk|>", "<|eog|>"]
 
 
 def test_encode_game():

@@ -45,10 +45,10 @@ def to_embedding(move: str):
         return [token_to_embedding_map["<|unk|>"]]
 
 
-def from_embedding(embedding: list[int] | int) -> str:
+def from_embedding(embedding: list[int]) -> list[str]:
     if not isinstance(embedding, list):
         embedding = [embedding]
-    return "".join([embedding_to_token_map.get(i, "<|unk|>") for i in embedding])
+    return [embedding_to_token_map.get(i, "<|unk|>") for i in embedding]
 
 
 def encode_game(game: Game) -> list[int]:
@@ -73,11 +73,13 @@ def decode(token_ids: list[int]):
     i = 0
     while i < len(token_ids):
         if token_ids[i] >= offset:  # Is a special token
-            moves.append(from_embedding(token_ids[i]))
+            move = from_embedding(token_ids[i])
+            moves.append("".join(move))
             i += 1
         else:  # It's a move
             if i + 4 <= len(token_ids):
-                moves.append(from_embedding(token_ids[i : i + 4]))
+                move = from_embedding(token_ids[i : i + 4])
+                moves.append("".join(move))
                 i += 4
             else:  # Incomplete move at the end
                 warnings.warn(
