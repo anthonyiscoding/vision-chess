@@ -228,3 +228,4 @@ custom-settings.toml
 
 logs/
 .github
+logs-*/

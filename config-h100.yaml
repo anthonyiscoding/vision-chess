@@ -46,7 +46,11 @@ trainer:
         verbose: true
 
   logger:
-    class_path: lightning.pytorch.loggers.TensorBoardLogger
-    init_args:
-      save_dir: "logs"
-      name: "default"
+    - class_path: lightning.pytorch.loggers.TensorBoardLogger
+      init_args:
+        save_dir: "logs"
+        name: "default"
+    - class_path: lightning.pytorch.loggers.mlflow.MLFlowLogger
+      init_args:
+        experiment_name: "default-config"
+        save_dir: "logs-mlflow"
