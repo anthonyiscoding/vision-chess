@@ -74,9 +74,7 @@ class NpyDataset(Dataset):
     def __getitem__(self, index):
         file_path, i, game_start, game_end = self.samples[index]
         games = np.load(file_path, mmap_mode="r")
-        game = games[i]
-
-        token_ids = tokenizer.encode_array(game)
+        token_ids = games[i]
 
         # TODO: Skip games with unknown tokens
         # if token_ids.index(tokenizer.special_tokens_to_embeddings['<|unk|>']):
