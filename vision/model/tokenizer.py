@@ -61,19 +61,19 @@ def encode_game(game: Game) -> list[int]:
     return token_ids
 
 
-def encode_array(move_list):
+def encode_array(move_list: list[str]) -> list[int]:
     token_ids = []
     for m in move_list:
         token_ids.extend(to_embedding(m))
     return token_ids
 
 
-def decode(token_ids: list[int]):
+def decode(token_ids: list[int]) -> list[str]:
     moves = []
     i = 0
     while i < len(token_ids):
         if token_ids[i] >= offset:  # Is a special token
-            move = from_embedding(token_ids[i])
+            move = from_embedding([token_ids[i]])
             moves.append("".join(move))
             i += 1
         else:  # It's a move
