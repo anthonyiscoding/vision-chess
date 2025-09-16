@@ -216,6 +216,7 @@ class ChessModel(L.LightningModule):
             factor=self.reduce_lr_by,
             mode="min",
             threshold_mode="abs",
+            threshold=1e-3,
         )
 
         return {
