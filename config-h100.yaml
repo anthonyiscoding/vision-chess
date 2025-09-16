@@ -9,7 +9,7 @@ model:
   learning_rate: 1.0e-4
   scheduler_patience: 4
   reduce_lr_by: 0.5
-  vocabulary_size: 4100
+  vocabulary_size: 20
 
 data:
   batch_size: 1200
