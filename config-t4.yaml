@@ -6,7 +6,7 @@ model:
   max_seq_len: 410
   attn_dropout: 0.0
   transformer_layers: 6
-  learning_rate: 1.0e-5
+  learning_rate: 1.0e-4
   scheduler_patience: 5
   reduce_lr_by: 0.5
   vocabulary_size: 20
@@ -52,5 +52,5 @@ trainer:
         name: "default"
     - class_path: lightning.pytorch.loggers.mlflow.MLFlowLogger
       init_args:
-        experiment_name: "default-config"
+        experiment_name: "t4-config"
         save_dir: "logs-mlflow"

@@ -52,5 +52,5 @@ trainer:
         name: "default"
     - class_path: lightning.pytorch.loggers.mlflow.MLFlowLogger
       init_args:
-        experiment_name: "default-config"
+        experiment_name: "h100-config"
         save_dir: "logs-mlflow"
