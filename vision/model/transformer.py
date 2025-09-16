@@ -83,6 +83,7 @@ class ChessModel(L.LightningModule):
             self.emb_dim,
         )
 
+        self.embedding_bn = nn.BatchNorm1d(self.emb_dim)
         self.transformer_blocks = nn.ModuleList(
             [
                 PreNormTransformerLayer(
@@ -101,6 +102,7 @@ class ChessModel(L.LightningModule):
         )
 
         self.final_norm = nn.RMSNorm(self.emb_dim)
+        self.output_bn = nn.BatchNorm1d(self.emb_dim)
         self.out_head = nn.Linear(self.emb_dim, self.vocabulary_size, bias=False)
 
     def forward(self, idx):
@@ -111,9 +113,20 @@ class ChessModel(L.LightningModule):
         )
 
         x = token_embeds + positional_embeds
+
+        # BatchNorm1d expects (batch, features, sequence) so we transpose
+        x = x.transpose(1, 2)  # (batch, emb_dim, seq_len)
+        x = self.embedding_bn(x)
+        x = x.transpose(1, 2)  # (batch, seq_len, emb_dim)
+
         for block in self.transformer_blocks:
             x = block(x)
         x = self.final_norm(x)
+
+        x = x.transpose(1, 2)  # (batch, emb_dim, seq_len)
+        x = self.output_bn(x)
+        x = x.transpose(1, 2)  # (batch, seq_len, emb_dim)
+
         return self.out_head(x)
 
     def _shared_step(self, batch, batch_idx, stage):
