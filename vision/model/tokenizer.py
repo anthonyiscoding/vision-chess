@@ -51,8 +51,8 @@ def from_embedding(embedding: list[int] | int) -> str:
     return "".join([embedding_to_token_map.get(i, "<|unk|>") for i in embedding])
 
 
-def encode_game(game: Game):
-    token_ids = []
+def encode_game(game: Game) -> list[int]:
+    token_ids: list[int] = []
     token_ids.extend(to_embedding("<|sog|>"))
     for m in game.mainline_moves():
         # TODO: Figure out if promotions are relevant to the model

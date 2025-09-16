@@ -4,9 +4,12 @@ import random
 import sys
 from pathlib import Path
 import chess.pgn
+from chess.pgn import Game
 import numpy as np
 from tqdm import tqdm
 import os
+
+from vision.model.tokenizer import encode_game, token_to_embedding_map
 
 
 # TODO: Make this a proper class
@@ -21,11 +24,8 @@ class PgnProcessor:
 
             while game:
                 try:
-                    game = chess.pgn.read_game(f)
-                    moves = ["<|startofgame|>"]
-                    moves.extend(m.uci() for m in game.mainline_moves())
-                    moves.append("<|endofgame|>")
-                    game_list = [m for m in moves if m is not None]
+                    game: Game | None = chess.pgn.read_game(f)
+                    game_list = encode_game(game)
                     yield game_list
                 except KeyboardInterrupt:
                     sys.exit(0)
@@ -61,7 +61,7 @@ class PgnProcessor:
                     array=a,
                     pad_width=(0, len(longest_array) - len(a)),
                     mode="constant",
-                    constant_values="<|pad|>",
+                    constant_values=token_to_embedding_map["<|pad|>"],
                 )
             )
 
